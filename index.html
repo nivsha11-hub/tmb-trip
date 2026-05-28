@@ -214,7 +214,26 @@ input,select,textarea{font:inherit;color:inherit}
 .stat-label{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .member-role{font-size:10px;letter-spacing:.06em;padding:2px 7px;border-radius:var(--radius)}
 .member-role.admin{background:var(--accent-bg);color:var(--accent)}
+.member-role.member{background:var(--surface2);color:var(--muted)}
 .member-role.user{background:var(--surface2);color:var(--muted)}
+
+/* ─── MEMBER CARDS ─── */
+.member-card{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:flex-start;transition:background .15s}
+.member-card:hover{background:rgba(255,255,255,.02)}
+.member-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0;letter-spacing:0}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:13px;font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.member-email{font-size:11px;color:var(--muted);margin-bottom:6px;direction:ltr;text-align:right}
+.member-stats{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap}
+.member-equip-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:100%;max-width:180px;margin-bottom:8px}
+.member-equip-fill{height:100%;background:var(--ok);transition:width .3s}
+.member-perms{font-size:10px;color:var(--muted2);background:var(--bg);padding:5px 8px;border-radius:var(--radius);margin-bottom:8px;line-height:1.6}
+.member-actions{display:flex;gap:6px;flex-wrap:wrap}
+.role-btn{padding:5px 12px;font-size:11px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.role-btn:hover{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
+.role-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
+.members-header{padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.members-count{font-size:18px;font-weight:700;color:var(--text)}
 
 /* ─── TOAST ─── */
 #toast{position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:10px 18px;border-radius:var(--radius);z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);white-space:nowrap}
@@ -396,11 +415,7 @@ input,select,textarea{font:inherit;color:inherit}
 
         <!-- MEMBERS -->
         <div class="admin-section" id="sec-members">
-          <h2>חברי קבוצה</h2>
-          <div class="add-form" style="background:var(--bg);padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--muted);border-right:2px solid var(--accent-border)">
-            הרשמה פתוחה — חברים נרשמים עצמאית דרך הקישור לאתר.
-            <br>כאן ניתן לשנות תפקידים.
-          </div>
+          <h2>ניהול משתמשים</h2>
           <div id="members-list"></div>
         </div>
 
@@ -1009,11 +1024,11 @@ async function loadProfileAndStart(){
   document.getElementById('auth-loading').style.display = 'block';
 
   // Load own profile
-  const { data: profile } = await sb.from('profiles').select('*').eq('id', sbUser.id).single();
+  const { data: profile } = await sb.from('profiles').select('id,display_name,role,email,joined_at').eq('id', sbUser.id).single();
   sbProfile = profile;
 
-  // Load all profiles (for group overview)
-  const { data: profiles } = await sb.from('profiles').select('*');
+  // Load all profiles (for group overview + admin panel)
+  const { data: profiles } = await sb.from('profiles').select('id,display_name,role,email,joined_at');
   allProfiles = profiles || [];
 
   // Load all equipment progress
@@ -1804,34 +1819,90 @@ function renderSegmentsList(){
 //  ADMIN — MEMBERS
 // ══════════════════════════════════════════
 
-async function toggleMemberRole(id){
+async function toggleMemberRole(id, newRole){
   const p = allProfiles.find(x => x.id === id);
   if (!p) return;
   if (id === sbUser?.id){ toast('לא ניתן לשנות תפקיד עצמך', 'err'); return; }
-  const newRole = p.role === 'admin' ? 'member' : 'admin';
   const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', id);
   if (error){ toast('שגיאה בעדכון תפקיד', 'err'); return; }
   p.role = newRole;
   renderMembersList();
   renderOverview();
-  toast('תפקיד עודכן');
+  toast(`${p.display_name} עודכן ל${newRole === 'admin' ? 'מנהל' : 'מטיל'}`);
 }
 
 function renderMembersList(){
   const el = document.getElementById('members-list');
-  if (!allProfiles.length){ el.innerHTML = '<div class="empty-state">אין חברים רשומים</div>'; return; }
-  el.innerHTML = allProfiles.map(p => `
-    <div class="list-item">
-      <div class="li-main">
-        <div class="li-name">${p.display_name} ${p.id === sbUser?.id ? '<span style="font-size:11px;color:var(--muted)">(אתה)</span>' : ''}</div>
-        <div class="li-meta" style="direction:ltr;text-align:right">${allProfiles.find(x=>x.id===p.id)?.id?.slice(0,8)}…</div>
+  if (!allProfiles.length){
+    el.innerHTML = '<div class="empty-state">אין חברים רשומים עדיין</div>';
+    return;
+  }
+
+  const ROLE_PERMS = {
+    admin: 'גישה מלאה: מפה · ציוד של כולם · פאנל ניהול · שינוי בקתות ומקטעים · ניהול משתמשים',
+    member: 'גישה חלקית: מפה · ציוד אישי בלבד · אין גישה לניהול'
+  };
+
+  const AVATAR_COLORS = ['#e76f51','#f4a261','#2a9d8f','#457b9d','#9b5de5','#f15bb5','#00bbf9','#4a9e6e'];
+
+  const sorted = [...allProfiles].sort((a,b) => {
+    if (a.role === 'admin' && b.role !== 'admin') return -1;
+    if (b.role === 'admin' && a.role !== 'admin') return 1;
+    return (a.display_name||'').localeCompare(b.display_name||'');
+  });
+
+  const header = `
+    <div class="members-header">
+      <div>
+        <div class="members-count">${allProfiles.length}</div>
+        <div>משתמשים רשומים</div>
       </div>
-      <span class="member-role ${p.role}">${p.role === 'admin' ? 'מנהל' : 'מטיל'}</span>
-      <div class="li-actions">
-        <button class="btn-sm" onclick="toggleMemberRole('${p.id}')">${p.role === 'admin' ? 'הפוך למטיל' : 'הפוך למנהל'}</button>
+      <div style="text-align:left;font-size:11px;line-height:1.8">
+        <div><span style="color:var(--accent)">●</span> מנהל — ${allProfiles.filter(p=>p.role==='admin').length}</div>
+        <div><span style="color:var(--muted)">●</span> מטיל — ${allProfiles.filter(p=>p.role!=='admin').length}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+
+  const cards = sorted.map((p, i) => {
+    const isMe = p.id === sbUser?.id;
+    const isAdmin = p.role === 'admin';
+    const userEquip = equipProgress[p.id] || {};
+    const total = EQUIPMENT.length;
+    const done  = EQUIPMENT.filter(item => userEquip[item.id]).length;
+    const pct   = Math.round(done / total * 100);
+    const initial = (p.display_name || '?').charAt(0).toUpperCase();
+    const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    const joinedDate = p.joined_at ? new Date(p.joined_at).toLocaleDateString('he-IL') : '—';
+
+    return `<div class="member-card">
+      <div class="member-avatar" style="background:${avatarColor}">${initial}</div>
+      <div class="member-info">
+        <div class="member-name">
+          ${p.display_name || '—'}
+          ${isMe ? '<span style="font-size:10px;color:var(--muted);font-weight:400">(אתה)</span>' : ''}
+          <span class="member-role ${p.role}">${isAdmin ? 'מנהל' : 'מטיל'}</span>
+        </div>
+        <div class="member-email">${p.email || '—'}</div>
+        <div class="member-stats">
+          <span>הצטרף: ${joinedDate}</span>
+          <span>ציוד: ${done}/${total} (${pct}%)</span>
+        </div>
+        <div class="member-equip-bar">
+          <div class="member-equip-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="member-perms">${ROLE_PERMS[p.role] || ROLE_PERMS.member}</div>
+        ${!isMe ? `
+        <div class="member-actions">
+          ${!isAdmin
+            ? `<button class="role-btn" onclick="toggleMemberRole('${p.id}','admin')">הפוך למנהל</button>`
+            : `<button class="role-btn danger" onclick="toggleMemberRole('${p.id}','member')">הורד למטיל</button>`
+          }
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = header + cards;
 }
 
 // ══════════════════════════════════════════
