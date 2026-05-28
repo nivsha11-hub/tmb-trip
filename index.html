@@ -661,8 +661,19 @@ input,select,textarea{font:inherit;color:inherit}
             <h3>הוסף / ערוך מקטע</h3>
             <div class="form-grid">
               <div class="field-sm"><label>יום</label><input type="number" id="r-day" min="1" placeholder="1"></div>
-              <div class="field-sm"><label>מ-</label><input type="text" id="r-from" placeholder="Chamonix"></div>
-              <div class="field-sm"><label>אל-</label><input type="text" id="r-to" placeholder="Les Contamines"></div>
+              <!-- FROM search -->
+              <div class="field-sm form-full" style="position:relative">
+                <label>נקודת מוצא — חפש מיקום</label>
+                <input type="text" id="r-from-search" placeholder="הקלד שם מקום, עיר..." oninput="onSegFromSearch()" onblur="hideSegResults('seg-from-results')" autocomplete="off">
+                <div id="seg-from-results" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:var(--surface2);border:1px solid var(--border2);border-top:none;max-height:200px;overflow-y:auto"></div>
+              </div>
+              <!-- TO search -->
+              <div class="field-sm form-full" style="position:relative">
+                <label>נקודת יעד — חפש מיקום</label>
+                <input type="text" id="r-to-search" placeholder="הקלד שם מקום, עיר..." oninput="onSegToSearch()" onblur="hideSegResults('seg-to-results')" autocomplete="off">
+                <div id="seg-to-results" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:var(--surface2);border:1px solid var(--border2);border-top:none;max-height:200px;overflow-y:auto"></div>
+              </div>
+              <div id="seg-geo-status" style="grid-column:1/-1;font-size:11px;color:var(--muted);min-height:16px"></div>
               <div class="field-sm"><label>מרחק (ק"מ)</label><input type="number" id="r-dist" placeholder="14"></div>
               <div class="field-sm"><label>עלייה (מ')</label><input type="number" id="r-up" placeholder="1050"></div>
               <div class="field-sm"><label>ירידה (מ')</label><input type="number" id="r-down" placeholder="800"></div>
@@ -1692,6 +1703,10 @@ function refreshMapMarkers(){
 
   // Re-add when map is ready; if not yet ready, wait for load event above
   if (!mapLoaded) return;
+
+  // Draw custom-segment lines (segments added with geocoded coords)
+  renderCustomSegmentLines();
+
   if (!hutsVisible) return;
 
   S.huts.forEach(hut => {
@@ -2449,17 +2464,213 @@ function renderHutsList(){
 }
 
 // ══════════════════════════════════════════
-//  ADMIN — SEGMENTS
+//  ADMIN — SEGMENTS (with geocoding)
 // ══════════════════════════════════════════
 
+// Segment geocoding state
+let _segFromGeo = null;   // { lat, lng, name }
+let _segToGeo   = null;
+let _segFromDebounce = null;
+let _segToDebounce   = null;
+let _segPreviewMarkers = [];
+let _segPreviewLineId  = null;
+let _customSegLayers   = []; // { sourceId, layerIds[] } for saved segments
+
+// ── Search input handlers ──
+function onSegFromSearch() {
+  const q = document.getElementById('r-from-search').value.trim();
+  _segFromGeo = null;
+  clearTimeout(_segFromDebounce);
+  const el = document.getElementById('seg-from-results');
+  if (q.length < 2) { el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML='<div class="loc-result"><div class="loc-result-name" style="color:var(--muted)">מחפש...</div></div>';
+  _segFromDebounce = setTimeout(()=>fetchSegSuggestions(q,'seg-from-results','from'), 400);
+}
+
+function onSegToSearch() {
+  const q = document.getElementById('r-to-search').value.trim();
+  _segToGeo = null;
+  clearTimeout(_segToDebounce);
+  const el = document.getElementById('seg-to-results');
+  if (q.length < 2) { el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML='<div class="loc-result"><div class="loc-result-name" style="color:var(--muted)">מחפש...</div></div>';
+  _segToDebounce = setTimeout(()=>fetchSegSuggestions(q,'seg-to-results','to'), 400);
+}
+
+async function fetchSegSuggestions(q, resultsId, which) {
+  const el = document.getElementById(resultsId);
+  if (!el) return;
+  try {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lon=6.86&lat=45.85&zoom=10`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.features?.length) {
+      el.innerHTML='<div class="loc-result"><div class="loc-result-name" style="color:var(--muted)">לא נמצא</div></div>';
+      return;
+    }
+    el.innerHTML = data.features.map(f => {
+      const p = f.properties;
+      const name = p.name || p.street || '';
+      const city = [p.city||p.town||p.village, p.country].filter(Boolean).join(', ');
+      const lat = f.geometry.coordinates[1];
+      const lng = f.geometry.coordinates[0];
+      const safeName = (name||city).replace(/'/g,"\\'");
+      return `<div class="loc-result" onmousedown="selectSegLocation(event,'${which}',${lat},${lng},'${safeName}')">
+        <div class="loc-result-name">${name||city}</div>
+        ${city&&name?`<div class="loc-result-sub">${city}</div>`:''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML='<div class="loc-result"><div class="loc-result-name" style="color:var(--danger)">שגיאת חיפוש</div></div>';
+  }
+}
+
+function selectSegLocation(e, which, lat, lng, name) {
+  e.preventDefault();
+  const inputId   = which==='from' ? 'r-from-search' : 'r-to-search';
+  const resultsId = which==='from' ? 'seg-from-results' : 'seg-to-results';
+  document.getElementById(inputId).value = name;
+  document.getElementById(resultsId).style.display = 'none';
+  if (which==='from') _segFromGeo = { lat, lng, name };
+  else                _segToGeo   = { lat, lng, name };
+  updateSegGeoStatus();
+  showSegmentPreview();
+}
+
+function hideSegResults(id) {
+  setTimeout(()=>{ const el=document.getElementById(id); if(el) el.style.display='none'; }, 150);
+}
+
+function updateSegGeoStatus() {
+  const el = document.getElementById('seg-geo-status');
+  if (!el) return;
+  const parts = [];
+  if (_segFromGeo) parts.push(`מ: ${_segFromGeo.name} (${_segFromGeo.lat.toFixed(4)}, ${_segFromGeo.lng.toFixed(4)})`);
+  if (_segToGeo)   parts.push(`אל: ${_segToGeo.name} (${_segToGeo.lat.toFixed(4)}, ${_segToGeo.lng.toFixed(4)})`);
+  el.textContent = parts.join(' • ');
+}
+
+// ── Preview on 3D map ──
+function showSegmentPreview() {
+  clearSegmentPreviewMarkers();
+  if (!map || !mapLoaded) return;
+
+  // From marker — green
+  if (_segFromGeo) {
+    const el = document.createElement('div');
+    el.style.cssText = 'width:16px;height:16px;background:#4a9e6e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.7);cursor:pointer';
+    el.title = _segFromGeo.name;
+    const m = new maplibregl.Marker({ element: el })
+      .setLngLat([_segFromGeo.lng, _segFromGeo.lat])
+      .setPopup(new maplibregl.Popup({ offset:10 }).setHTML(`<div style="font-size:12px;font-weight:600;color:#4a9e6e">מוצא</div><div style="font-size:11px">${_segFromGeo.name}</div>`))
+      .addTo(map);
+    _segPreviewMarkers.push(m);
+  }
+
+  // To marker — orange
+  if (_segToGeo) {
+    const el = document.createElement('div');
+    el.style.cssText = 'width:16px;height:16px;background:#d4883a;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.7);cursor:pointer';
+    el.title = _segToGeo.name;
+    const m = new maplibregl.Marker({ element: el })
+      .setLngLat([_segToGeo.lng, _segToGeo.lat])
+      .setPopup(new maplibregl.Popup({ offset:10 }).setHTML(`<div style="font-size:12px;font-weight:600;color:#d4883a">יעד</div><div style="font-size:11px">${_segToGeo.name}</div>`))
+      .addTo(map);
+    _segPreviewMarkers.push(m);
+  }
+
+  // Line between them (dashed gold)
+  const srcId = 'seg-preview-src';
+  const lineId = 'seg-preview-line';
+  if (map.getLayer(lineId)) map.removeLayer(lineId);
+  if (map.getSource(srcId)) map.removeSource(srcId);
+
+  if (_segFromGeo && _segToGeo) {
+    map.addSource(srcId, {
+      type:'geojson',
+      data:{ type:'Feature', geometry:{ type:'LineString',
+        coordinates:[ [_segFromGeo.lng,_segFromGeo.lat], [_segToGeo.lng,_segToGeo.lat] ]
+      }}
+    });
+    map.addLayer({ id:lineId, type:'line', source:srcId,
+      paint:{ 'line-color':'#c9a84c', 'line-width':3, 'line-dasharray':[5,4], 'line-opacity':0.95 }
+    });
+    _segPreviewLineId = { src:srcId, layer:lineId };
+
+    // Fit both points in view + switch to map panel
+    const bounds = new maplibregl.LngLatBounds()
+      .extend([_segFromGeo.lng, _segFromGeo.lat])
+      .extend([_segToGeo.lng,   _segToGeo.lat]);
+    map.fitBounds(bounds, { padding:100, maxZoom:13, duration:1400, pitch:50 });
+    // Switch panel to show map
+    switchPanel('map', null);
+  } else {
+    const single = _segFromGeo || _segToGeo;
+    if (single) map.flyTo({ center:[single.lng, single.lat], zoom:12, pitch:50, duration:1000 });
+  }
+}
+
+function clearSegmentPreviewMarkers() {
+  _segPreviewMarkers.forEach(m=>m.remove());
+  _segPreviewMarkers = [];
+  if (_segPreviewLineId && map) {
+    if (map.getLayer(_segPreviewLineId.layer)) map.removeLayer(_segPreviewLineId.layer);
+    if (map.getSource(_segPreviewLineId.src))  map.removeSource(_segPreviewLineId.src);
+  }
+  _segPreviewLineId = null;
+}
+
+// ── Permanent custom-segment lines on map ──
+function renderCustomSegmentLines() {
+  if (!map || !mapLoaded) return;
+  // Clear old custom lines
+  _customSegLayers.forEach(({ src, layers }) => {
+    layers.forEach(l => { if (map.getLayer(l)) map.removeLayer(l); });
+    if (map.getSource(src)) map.removeSource(src);
+  });
+  _customSegLayers = [];
+
+  // Draw lines for segments that have coordinates
+  S.segments.forEach(seg => {
+    if (!seg.fromLat || !seg.toLat) return;
+    const srcId  = `cseg-src-${seg.id}`;
+    const lineId = `cseg-line-${seg.id}`;
+    const casingId = `cseg-case-${seg.id}`;
+    map.addSource(srcId, {
+      type:'geojson',
+      data:{ type:'Feature', geometry:{ type:'LineString',
+        coordinates:[ [seg.fromLng, seg.fromLat], [seg.toLng, seg.toLat] ]
+      }}
+    });
+    // White casing
+    map.addLayer({ id:casingId, type:'line', source:srcId,
+      layout:{ 'line-cap':'round', 'line-join':'round' },
+      paint:{ 'line-color':'#fff', 'line-width':7, 'line-opacity':0.6 }
+    });
+    // Accent line
+    map.addLayer({ id:lineId, type:'line', source:srcId,
+      layout:{ 'line-cap':'round', 'line-join':'round' },
+      paint:{ 'line-color':'#c9a84c', 'line-width':4, 'line-dasharray':[6,3], 'line-opacity':0.9 }
+    });
+    _customSegLayers.push({ src:srcId, layers:[casingId, lineId] });
+  });
+}
+
 function addSegment(){
-  const from=document.getElementById('r-from').value.trim();
-  const to=document.getElementById('r-to').value.trim();
-  if(!from||!to){toast('נא למלא מ- ואל-','err');return;}
+  const from = document.getElementById('r-from-search').value.trim();
+  const to   = document.getElementById('r-to-search').value.trim();
+  if(!from||!to){toast('נא לחפש ולבחור נקודת מוצא ויעד','err');return;}
+  const hasCoords = !!((_segFromGeo && _segToGeo));
   const seg={
     id:'s_'+Date.now(),
     day:Number(document.getElementById('r-day').value)||1,
     from,to,
+    fromLat: _segFromGeo?.lat ?? null,
+    fromLng: _segFromGeo?.lng ?? null,
+    toLat:   _segToGeo?.lat   ?? null,
+    toLng:   _segToGeo?.lng   ?? null,
     dist:Number(document.getElementById('r-dist').value)||0,
     up:Number(document.getElementById('r-up').value)||0,
     down:Number(document.getElementById('r-down').value)||0,
@@ -2468,20 +2679,28 @@ function addSegment(){
     desc:document.getElementById('r-desc').value.trim()
   };
   S.segments.push(seg);
-  saveState(); // async — fire and forget
+  saveState();
+  clearSegmentPreviewMarkers();
+  _segFromGeo = null; _segToGeo = null;
+  const statusEl = document.getElementById('seg-geo-status');
+  if (statusEl) statusEl.textContent = '';
   renderSegmentsList();
   renderDaysList();
   renderOverview();
-  toast('מקטע נוסף');
-  ['r-from','r-to','r-dist','r-up','r-down','r-time','r-desc'].forEach(id=>document.getElementById(id).value='');
+  renderCustomSegmentLines();
+  toast(hasCoords ? 'מקטע נוסף עם מיקומים על המפה' : 'מקטע נוסף');
+  ['r-from-search','r-to-search','r-dist','r-up','r-down','r-time','r-desc'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
 }
 
 function deleteSegment(id){
   S.segments=S.segments.filter(s=>s.id!==id);
-  saveState(); // async — fire and forget
+  saveState();
   renderSegmentsList();
   renderDaysList();
   renderOverview();
+  renderCustomSegmentLines();
   toast('נמחק');
 }
 
