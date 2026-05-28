@@ -220,6 +220,11 @@ input,select,textarea{font:inherit;color:inherit}
 .btn-sm.danger{color:var(--danger);border-color:var(--danger-bg)}
 .btn-sm.danger:hover{background:var(--danger-bg)}
 .add-form{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:24px;border-radius:var(--radius)}
+.loc-result{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s;text-align:right}
+.loc-result:last-child{border-bottom:none}
+.loc-result:hover{background:var(--accent-bg)}
+.loc-result-name{font-size:13px;color:var(--text);font-weight:500}
+.loc-result-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .add-form h3{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
 .add-form .actions{display:flex;justify-content:flex-start;gap:8px;margin-top:14px}
 .list-item{background:var(--surface);border:1px solid var(--border);padding:14px 18px;margin-bottom:8px;border-radius:var(--radius);display:flex;align-items:center;gap:14px;transition:border-color .15s}
@@ -622,7 +627,12 @@ input,select,textarea{font:inherit;color:inherit}
           <div class="add-form">
             <h3>הוסף בקתה / לינה</h3>
             <div class="form-grid">
-              <div class="field-sm"><label>שם</label><input type="text" id="h-name" placeholder="Refuge du..." oninput="onHutNameInput()"></div>
+              <div class="field-sm form-full" style="position:relative">
+                <label>חפש מיקום</label>
+                <input type="text" id="h-location-search" placeholder="הקלד שם בקתה, מלון או כתובת..." oninput="onLocationSearch()" onblur="hideLocationResults()" autocomplete="off">
+                <div id="location-results" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:var(--surface2);border:1px solid var(--border2);border-top:none;max-height:220px;overflow-y:auto"></div>
+              </div>
+              <div class="field-sm"><label>שם</label><input type="text" id="h-name" placeholder="Refuge du..."></div>
               <div class="field-sm"><label>יום</label><input type="number" id="h-day" min="1" max="14" placeholder="1"></div>
               <div class="field-sm"><label>גובה (מ')</label><input type="number" id="h-alt" placeholder="2000"></div>
               <div class="field-sm"><label>מדינה</label>
@@ -631,7 +641,7 @@ input,select,textarea{font:inherit;color:inherit}
               <div class="field-sm"><label>סטטוס</label>
                 <select id="h-status"><option value="none">לא מוזמן</option><option value="pending">בתהליך</option><option value="booked">מוזמן</option></select>
               </div>
-              <div class="field-sm"><label>טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר" oninput="onHutContactInput()"></div>
+              <div class="field-sm"><label>טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר"></div>
               <div class="field-sm form-full"><label>הערות</label><textarea id="h-notes" placeholder="הערות חשובות..."></textarea></div>
             </div>
             <div class="actions">
@@ -2225,147 +2235,81 @@ function renderOverview(){
 //  ADMIN — HUTS
 // ══════════════════════════════════════════
 
-// ── Geocoding via Nominatim (OSM) ──
-let _pendingGeo = null; // { lat, lng } if already resolved
-let _geoNameCache = {}; // cache name→coords
+// ── Location Autocomplete (Photon API — OpenStreetMap) ──
+let _pendingGeo = null;
 let _geoDebounce = null;
+let _previewMarker = null;
 
-function onHutNameInput() {
-  const name = document.getElementById('h-name').value.trim();
-  _pendingGeo = null;
+function onLocationSearch() {
+  const q = document.getElementById('h-location-search').value.trim();
   clearTimeout(_geoDebounce);
-  const statusEl = document.getElementById('geo-status');
-  if (!name || name.length < 3) { if (statusEl) statusEl.textContent = ''; return; }
-  if (_geoNameCache[name]) {
-    _pendingGeo = _geoNameCache[name];
-    if (statusEl) statusEl.textContent = `📍 ${_pendingGeo.lat.toFixed(4)}, ${_pendingGeo.lng.toFixed(4)}`;
-    return;
-  }
-  if (statusEl) statusEl.textContent = 'מחפש מיקום...';
-  _geoDebounce = setTimeout(() => geocodeHutName(name), 700);
+  const resultsEl = document.getElementById('location-results');
+  if (q.length < 2) { resultsEl.style.display = 'none'; return; }
+  resultsEl.style.display = 'block';
+  resultsEl.innerHTML = '<div class="loc-result"><div class="loc-result-name" style="color:var(--muted)">מחפש...</div></div>';
+  _geoDebounce = setTimeout(() => fetchLocationSuggestions(q), 400);
 }
 
-// ── URL-based location extraction ──
-function onHutContactInput() {
-  const val = document.getElementById('h-contact').value.trim();
-  if (!val.startsWith('http')) return; // not a URL
-  clearTimeout(_geoDebounce);
-  _pendingGeo = null;
-  const statusEl = document.getElementById('geo-status');
-  if (statusEl) statusEl.textContent = 'מנתח קישור...';
-  _geoDebounce = setTimeout(() => extractLocationFromUrl(val), 700);
-}
-
-function extractCoordsFromGoogleMaps(url) {
-  // Format: @lat,lng,zoom  e.g. @45.8326,6.8652,17z
-  let m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-  // Format: ?ll=lat,lng
-  m = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-  // Format: ?q=lat,lng
-  m = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-  // Format: /place/name/data=!...!3d45.8326!4d6.8652
-  m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-  return null;
-}
-
-function extractNameFromUrl(url) {
+async function fetchLocationSuggestions(q) {
+  const resultsEl = document.getElementById('location-results');
   try {
-    const u = new URL(url);
-    const host = u.hostname.replace('www.','');
-    const parts = u.pathname.split('/').filter(Boolean);
-
-    // Booking.com: /hotel/fr/hotel-name.html → "hotel name"
-    if (host.includes('booking.com')) {
-      const slug = parts[parts.length - 1]?.replace(/\.html?$/, '') || parts[parts.length - 2];
-      return slug?.replace(/[-_]/g, ' ');
+    // Photon: free OSM geocoder, biased to Alps region
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lon=6.86&lat=45.85&zoom=10`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('network');
+    const data = await res.json();
+    const features = data.features || [];
+    if (!features.length) {
+      resultsEl.innerHTML = '<div class="loc-result"><div class="loc-result-name" style="color:var(--muted)">לא נמצאו תוצאות</div></div>';
+      return;
     }
-    // Airbnb: /rooms/12345 or /h/property-name → use name part
-    if (host.includes('airbnb')) {
-      const hIdx = parts.indexOf('h');
-      if (hIdx >= 0 && parts[hIdx+1]) return parts[hIdx+1].replace(/[-_]/g, ' ');
-    }
-    // Google Maps: place name in path /maps/place/Name/
-    if (host.includes('google') || host.includes('maps.app')) {
-      const placeIdx = parts.indexOf('place');
-      if (placeIdx >= 0 && parts[placeIdx+1]) {
-        return decodeURIComponent(parts[placeIdx+1]).replace(/\+/g, ' ');
-      }
-    }
-    // Generic: take last meaningful path segment
-    const last = parts.filter(p => p.length > 3 && !/^\d+$/.test(p)).pop();
-    return last ? decodeURIComponent(last).replace(/[-_]/g, ' ').replace(/\.html?$/, '') : null;
-  } catch(e) { return null; }
+    resultsEl.innerHTML = features.map((f, i) => {
+      const p = f.properties;
+      const name = p.name || p.street || '';
+      const city = [p.city || p.town || p.village, p.country].filter(Boolean).join(', ');
+      const lat = f.geometry.coordinates[1];
+      const lng = f.geometry.coordinates[0];
+      return `<div class="loc-result" onmousedown="selectLocation(event,${lat},${lng},'${(name+'').replace(/'/g,"\\'")}','${(city+'').replace(/'/g,"\\'")}')">
+        <div class="loc-result-name">${name || city}</div>
+        ${city && name ? `<div class="loc-result-sub">${city}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    resultsEl.innerHTML = '<div class="loc-result"><div class="loc-result-name" style="color:var(--danger)">שגיאת חיפוש</div></div>';
+  }
 }
 
-async function extractLocationFromUrl(url) {
+function selectLocation(e, lat, lng, name, sub) {
+  e.preventDefault();
+  _pendingGeo = { lat, lng };
+
+  // Fill search field with selected name
+  document.getElementById('h-location-search').value = name + (sub ? ` — ${sub}` : '');
+  document.getElementById('location-results').style.display = 'none';
+
+  // Auto-fill name if empty
+  const nameEl = document.getElementById('h-name');
+  if (!nameEl.value.trim()) nameEl.value = name;
+
+  // Status
   const statusEl = document.getElementById('geo-status');
+  if (statusEl) statusEl.textContent = `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-  // 1. Try direct coordinate extraction (Google Maps)
-  const directCoords = extractCoordsFromGoogleMaps(url);
-  if (directCoords) {
-    _pendingGeo = directCoords;
-    if (statusEl) statusEl.textContent = `📍 ${directCoords.lat.toFixed(4)}, ${directCoords.lng.toFixed(4)}`;
-    // Also auto-fill name if empty
-    const nameEl = document.getElementById('h-name');
-    if (!nameEl.value.trim()) {
-      const name = extractNameFromUrl(url);
-      if (name) nameEl.value = name.split(' ').map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ');
-    }
-    return;
+  // Show preview pin on map
+  if (map) {
+    if (_previewMarker) _previewMarker.remove();
+    const el = document.createElement('div');
+    el.style.cssText = 'width:14px;height:14px;background:#c9a84c;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.6)';
+    _previewMarker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+    map.flyTo({ center: [lng, lat], zoom: 14, duration: 1200 });
   }
-
-  // 2. Extract name from URL and geocode
-  const name = extractNameFromUrl(url);
-  if (name && name.length > 2) {
-    if (statusEl) statusEl.textContent = `מחפש "${name}"...`;
-    // Also fill name field if empty
-    const nameEl = document.getElementById('h-name');
-    if (!nameEl.value.trim()) {
-      nameEl.value = name.split(' ').map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ');
-    }
-    await geocodeHutName(name);
-    return;
-  }
-
-  if (statusEl) statusEl.textContent = 'לא נמצא מיקום בקישור';
 }
 
-async function geocodeHutName(name) {
-  const statusEl = document.getElementById('geo-status');
-  // Search biased to TMB region (Mont Blanc massif area)
-  const viewbox = '5.8,46.4,7.9,45.4'; // W,N,E,S
-  const queries = [
-    name,
-    name + ' refuge',
-    name + ' mountain hut',
-  ];
-  for (const q of queries) {
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&viewbox=${viewbox}&accept-language=fr,en,it`;
-      const res = await fetch(url, { headers: { 'User-Agent': 'TMB-TrekApp/1.0 (trek-app)' } });
-      if (!res.ok) continue;
-      const results = await res.json();
-      // Prefer results in TMB bounding box, fall back to any result
-      const inBbox = results.filter(r => {
-        const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
-        return lat > 45.4 && lat < 46.4 && lng > 5.8 && lng < 7.9;
-      });
-      const best = (inBbox.length > 0 ? inBbox : results)[0];
-      if (best) {
-        const coords = { lat: parseFloat(best.lat), lng: parseFloat(best.lon) };
-        _pendingGeo = coords;
-        _geoNameCache[name] = coords;
-        if (statusEl) statusEl.textContent = `📍 ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
-        return;
-      }
-    } catch(e) {}
-  }
-  // Not found
-  if (statusEl) statusEl.textContent = 'מיקום לא נמצא – ימוקם ידנית';
+function hideLocationResults() {
+  setTimeout(() => {
+    const el = document.getElementById('location-results');
+    if (el) el.style.display = 'none';
+  }, 150);
 }
 
 async function addHut(){
@@ -2375,14 +2319,11 @@ async function addHut(){
   const btn = document.getElementById('btn-add-hut');
   const statusEl = document.getElementById('geo-status');
 
-  // If geocoding not yet done, try now
   let coords = _pendingGeo;
   if (!coords) {
-    if (btn) { btn.disabled = true; btn.textContent = 'מאתר...'; }
-    if (statusEl) statusEl.textContent = 'מחפש מיקום...';
-    await geocodeHutName(name);
-    coords = _pendingGeo;
-    if (btn) { btn.disabled = false; btn.textContent = 'הוסף'; }
+    toast('בחר מיקום מהחיפוש לפני ההוספה', 'warn');
+    document.getElementById('h-location-search')?.focus();
+    return;
   }
 
   // Default to TMB center if still not found
@@ -2409,8 +2350,11 @@ async function addHut(){
   refreshMapMarkers();
   toast(coords ? 'בקתה נוספה עם מיקום מדויק' : 'בקתה נוספה (מיקום ידני נדרש)');
   _pendingGeo = null;
+  if (_previewMarker) { _previewMarker.remove(); _previewMarker = null; }
   if (statusEl) statusEl.textContent = '';
-  ['h-name','h-alt','h-contact','h-notes'].forEach(id=>document.getElementById(id).value='');
+  ['h-name','h-alt','h-contact','h-notes','h-location-search'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
 }
 
 function quickUpdateHut(id,field,val){
