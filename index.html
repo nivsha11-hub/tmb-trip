@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mont Blanc Trek</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0c0c0c;
+  --surface:#161616;
+  --surface2:#1e1e1e;
+  --border:#272727;
+  --border2:#333;
+  --text:#e6e3dc;
+  --muted:#6b6660;
+  --muted2:#4a4745;
+  --accent:#c9a84c;
+  --accent-bg:rgba(201,168,76,.12);
+  --accent-border:rgba(201,168,76,.3);
+  --ok:#4a9e6e;
+  --ok-bg:rgba(74,158,110,.12);
+  --warn:#d4883a;
+  --warn-bg:rgba(212,136,58,.12);
+  --danger:#d95757;
+  --danger-bg:rgba(217,87,87,.12);
+  --radius:2px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
+button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
+input,select,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ─── AUTH ─── */
+#auth{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:40px}
+#auth-box{width:360px;background:var(--surface);border:1px solid var(--border);padding:40px}
+.auth-title{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.auth-sub{font-size:12px;color:var(--muted);margin-bottom:28px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);outline:none;border-radius:var(--radius);transition:border-color .15s}
+.field input:focus{border-color:var(--accent)}
+.btn-primary{width:100%;padding:10px;background:var(--accent);color:#000;font-weight:600;font-size:13px;letter-spacing:.04em;border-radius:var(--radius);transition:opacity .15s;margin-top:6px}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.auth-error{font-size:12px;color:var(--danger);margin-top:8px;min-height:16px}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:11px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.quick-login{display:flex;flex-direction:column;gap:6px}
+.quick-btn{padding:8px 12px;border:1px solid var(--border);background:transparent;text-align:right;font-size:13px;border-radius:var(--radius);transition:all .15s;display:flex;align-items:center;justify-content:space-between}
+.quick-btn:hover{border-color:var(--accent-border);background:var(--accent-bg);color:var(--accent)}
+.quick-btn .role{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.quick-btn:hover .role{color:var(--accent)}
+
+/* ─── APP SHELL ─── */
+#app{display:none;height:100vh;flex-direction:column}
+#app.on{display:flex}
+.topbar{height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:20px;flex-shrink:0;z-index:30}
+.logo{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+.nav{display:flex;gap:2px;flex:1}
+.nav-btn{padding:6px 14px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-radius:var(--radius);transition:all .15s}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.on{background:var(--bg);color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:12px;margin-right:auto}
+.user-tag{font-size:11px;letter-spacing:.06em;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:var(--radius)}
+.admin-tag{font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--muted);border-radius:var(--radius)}
+.logout-btn{font-size:12px;color:var(--muted);padding:4px 8px;border-radius:var(--radius);transition:color .15s}
+.logout-btn:hover{color:var(--danger)}
+.content{flex:1;overflow:hidden;display:flex}
+
+/* ─── PANELS ─── */
+.panel{display:none;flex:1;overflow:hidden}
+.panel.on{display:flex}
+
+/* ─── MAP PANEL ─── */
+#map-panel{position:relative}
+#map{flex:1;height:100%}
+.map-sidebar{width:300px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sidebar-head{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sidebar-head h2{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.trip-meta{display:flex;flex-direction:column;gap:3px}
+.trip-meta-row{display:flex;justify-content:space-between;font-size:12px}
+.trip-meta-row .label{color:var(--muted)}
+.trip-meta-row .val{color:var(--text);font-weight:500}
+.sidebar-body{flex:1;overflow-y:auto}
+.day-card{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative}
+.day-card:hover{background:rgba(255,255,255,.02)}
+.day-card.on{background:var(--accent-bg);border-left:2px solid var(--accent)}
+.day-num{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.day-route{font-size:13px;font-weight:600;margin-bottom:5px;line-height:1.3}
+.day-stats{display:flex;gap:14px;font-size:11px;color:var(--muted)}
+.day-stats span{white-space:nowrap}
+.day-hut{margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.day-hut-name{font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status-badge{font-size:10px;letter-spacing:.06em;padding:2px 7px;border-radius:var(--radius);white-space:nowrap;flex-shrink:0}
+.status-badge.booked{background:var(--ok-bg);color:var(--ok)}
+.status-badge.pending{background:var(--warn-bg);color:var(--warn)}
+.status-badge.none{background:var(--danger-bg);color:var(--danger)}
+
+/* MAP wrapper fills flex parent */
+#map-panel .map-wrap{flex:1;position:relative;overflow:hidden;min-width:0}
+#map{position:absolute;top:0;left:0;right:0;bottom:0}
+
+/* MAP CONTROLS OVERLAY */
+.map-overlay{position:absolute;top:16px;left:16px;z-index:10;display:flex;flex-direction:column;gap:8px}
+.map-ctrl{padding:7px 13px;background:var(--surface);border:1px solid var(--border);font-size:11px;letter-spacing:.06em;color:var(--text);border-radius:var(--radius);transition:all .15s;white-space:nowrap}
+.map-ctrl:hover,.map-ctrl.on{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
+.map-legend{position:absolute;bottom:32px;left:16px;z-index:10;background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-size:11px;border-radius:var(--radius)}
+.legend-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;color:var(--muted)}
+.legend-row:last-child{margin-bottom:0}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:2px solid}
+.legend-dot.booked{border-color:var(--ok);background:var(--ok-bg)}
+.legend-dot.pending{border-color:var(--warn);background:var(--warn-bg)}
+.legend-dot.none{border-color:var(--muted);background:transparent}
+.legend-line{width:20px;height:2px;background:var(--accent);flex-shrink:0}
+
+/* MAP POPUP */
+.maplibregl-popup-content{background:var(--surface)!important;border:1px solid var(--border)!important;color:var(--text)!important;font-family:var(--font)!important;font-size:13px!important;padding:12px 16px!important;border-radius:var(--radius)!important;box-shadow:0 8px 24px rgba(0,0,0,.6)!important}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--border)!important}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:var(--border)!important}
+.popup-name{font-weight:700;font-size:14px;margin-bottom:3px;color:var(--accent)}
+.popup-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
+.popup-info{font-size:12px;color:var(--text);line-height:1.5}
+.popup-status{display:inline-flex;margin-top:8px}
+.hut-marker-el{display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
+.hut-marker-el:hover{transform:scale(1.25)}
+.hut-marker-circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;border:3px solid rgba(255,255,255,.9);position:relative;flex-shrink:0}
+.hut-marker-circle::after{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid currentColor}
+.hut-marker-label{margin-top:8px;background:rgba(0,0,0,.82);color:#fff;font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em;text-align:center}
+.hut-marker-el.booked .hut-marker-circle{box-shadow:0 0 0 2px #4caf50}
+.hut-marker-el.pending .hut-marker-circle{box-shadow:0 0 0 2px #ff9800}
+
+/* ─── EQUIPMENT PANEL ─── */
+#equip-panel{flex-direction:row}
+.equip-sidebar{width:240px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.equip-sidebar-head{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.equip-sidebar-head h2{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.equip-sidebar-body{flex:1;overflow-y:auto;padding:12px 0}
+.member-progress{padding:10px 18px;cursor:pointer;transition:background .15s}
+.member-progress:hover{background:rgba(255,255,255,.02)}
+.member-progress.on{background:var(--accent-bg)}
+.mp-name{font-size:13px;font-weight:500;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.mp-pct{font-size:11px;color:var(--accent)}
+.progress-bar{height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.equip-main{flex:1;overflow-y:auto;padding:24px 32px}
+.equip-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.equip-header h1{font-size:18px;font-weight:700}
+.equip-header-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.filter-bar{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;border:1px solid var(--border);font-size:12px;border-radius:var(--radius);color:var(--muted);transition:all .15s}
+.filter-btn:hover{border-color:var(--border2);color:var(--text)}
+.filter-btn.on{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
+.equip-cat{margin-bottom:28px}
+.equip-cat-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.equip-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.equip-item:last-child{border-bottom:none}
+.equip-cb{width:16px;height:16px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;flex-shrink:0;margin-top:2px;appearance:none;-webkit-appearance:none;position:relative;transition:all .15s;border-radius:2px}
+.equip-cb:checked{background:var(--accent);border-color:var(--accent)}
+.equip-cb:checked::after{content:'';position:absolute;left:4px;top:1px;width:5px;height:8px;border:1.5px solid #000;border-top:none;border-left:none;transform:rotate(45deg)}
+.equip-cb:focus{outline:2px solid var(--accent);outline-offset:2px}
+.equip-text{flex:1}
+.equip-name{font-size:13px;transition:color .15s}
+.equip-name.done{text-decoration:line-through;color:var(--muted)}
+.equip-note{font-size:11px;color:var(--muted);margin-top:1px}
+.own-only{font-size:11px;color:var(--muted2);padding:3px 8px;background:var(--surface2);border-radius:var(--radius)}
+
+/* ─── ADMIN PANEL ─── */
+#admin-panel{flex-direction:row}
+.admin-nav{width:190px;background:var(--surface);border-left:1px solid var(--border);padding:8px 0;flex-shrink:0}
+.admin-nav-item{display:block;width:100%;text-align:right;padding:9px 18px;font-size:13px;color:var(--muted);transition:all .15s;border-radius:0;border-left:2px solid transparent}
+.admin-nav-item:hover{color:var(--text);background:rgba(255,255,255,.02)}
+.admin-nav-item.on{color:var(--text);background:var(--accent-bg);border-left-color:var(--accent)}
+.admin-body{flex:1;overflow-y:auto;padding:28px 32px}
+.admin-section{display:none}
+.admin-section.on{display:block}
+.admin-section h2{font-size:16px;font-weight:700;margin-bottom:20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-full{grid-column:1/-1}
+.field-sm{margin-bottom:0}
+.field-sm label{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.field-sm input,.field-sm select,.field-sm textarea{width:100%;padding:8px 11px;background:var(--bg);border:1px solid var(--border);color:var(--text);outline:none;border-radius:var(--radius);transition:border-color .15s;font-size:13px}
+.field-sm input:focus,.field-sm select:focus,.field-sm textarea:focus{border-color:var(--accent)}
+.field-sm textarea{resize:vertical;min-height:60px}
+.field-sm select option{background:var(--surface)}
+.btn-sm{padding:7px 14px;font-size:12px;letter-spacing:.04em;border-radius:var(--radius);border:1px solid var(--border);color:var(--muted);transition:all .15s}
+.btn-sm:hover{border-color:var(--accent-border);color:var(--accent)}
+.btn-sm.primary{background:var(--accent);border-color:var(--accent);color:#000;font-weight:600}
+.btn-sm.primary:hover{opacity:.85}
+.btn-sm.danger{color:var(--danger);border-color:var(--danger-bg)}
+.btn-sm.danger:hover{background:var(--danger-bg)}
+.add-form{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:24px;border-radius:var(--radius)}
+.add-form h3{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.add-form .actions{display:flex;justify-content:flex-start;gap:8px;margin-top:14px}
+.list-item{background:var(--surface);border:1px solid var(--border);padding:14px 18px;margin-bottom:8px;border-radius:var(--radius);display:flex;align-items:center;gap:14px;transition:border-color .15s}
+.list-item:hover{border-color:var(--border2)}
+.li-main{flex:1;min-width:0}
+.li-name{font-size:13px;font-weight:600;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li-meta{font-size:11px;color:var(--muted)}
+.li-actions{display:flex;gap:6px;flex-shrink:0}
+.country-flag{font-size:10px;letter-spacing:.06em;padding:2px 6px;background:var(--surface2);color:var(--muted);border-radius:var(--radius)}
+.inline-select{padding:4px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:12px;border-radius:var(--radius);outline:none;cursor:pointer}
+.inline-select:focus{border-color:var(--accent)}
+.sep{height:1px;background:var(--border);margin:24px 0}
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:18px;border-radius:var(--radius)}
+.stat-val{font-size:28px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.stat-label{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.member-role{font-size:10px;letter-spacing:.06em;padding:2px 7px;border-radius:var(--radius)}
+.member-role.admin{background:var(--accent-bg);color:var(--accent)}
+.member-role.user{background:var(--surface2);color:var(--muted)}
+
+/* ─── TOAST ─── */
+#toast{position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:10px 18px;border-radius:var(--radius);z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);white-space:nowrap}
+#toast.ok{border-color:var(--ok-bg);color:var(--ok)}
+#toast.err{border-color:var(--danger-bg);color:var(--danger)}
+#toast.show{opacity:1}
+
+/* empty states */
+.empty-state{padding:32px;text-align:center;color:var(--muted);font-size:13px}
+
+/* Focus visible */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ AUTH ═══════════ -->
+<div id="auth">
+  <div id="auth-box">
+    <div class="auth-title">Mont Blanc Trek</div>
+    <div class="auth-sub" id="auth-subtitle">Tour du Mont Blanc — כניסה למערכת</div>
+    <div class="field" id="auth-name-field" style="display:none">
+      <label>שם תצוגה</label>
+      <input type="text" id="auth-name" autocomplete="name" placeholder="שמך המלא">
+    </div>
+    <div class="field">
+      <label>אימייל</label>
+      <input type="email" id="auth-email" autocomplete="email" placeholder="name@example.com">
+    </div>
+    <div class="field">
+      <label>סיסמה</label>
+      <input type="password" id="auth-pass" autocomplete="current-password" placeholder="לפחות 6 תווים">
+    </div>
+    <div class="auth-error" id="auth-err"></div>
+    <button class="btn-primary" id="auth-submit" onclick="doAuthAction()">כניסה</button>
+    <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">
+      <span id="auth-toggle-text">אין לך חשבון?</span>
+      <button style="color:var(--accent);font-size:12px;padding:0 4px;text-decoration:underline;background:none;border:none;cursor:pointer" onclick="toggleAuthMode()">הרשמה</button>
+    </div>
+    <div id="auth-loading" style="display:none;text-align:center;padding-top:12px;font-size:12px;color:var(--muted)">טוען...</div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app">
+  <div class="topbar">
+    <div class="logo">Mont Blanc</div>
+    <div class="nav">
+      <button class="nav-btn on" onclick="switchPanel('map',this)">מפה</button>
+      <button class="nav-btn" onclick="switchPanel('equip',this)">ציוד</button>
+      <button class="nav-btn" id="admin-nav-btn" onclick="switchPanel('admin',this)" style="display:none">ניהול</button>
+    </div>
+    <div class="topbar-right">
+      <span class="admin-tag" id="user-role-tag"></span>
+      <span class="user-tag" id="user-tag"></span>
+      <button class="logout-btn" onclick="doLogout()">יציאה</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ MAP PANEL ══ -->
+    <div class="panel on" id="map-panel">
+      <div class="map-sidebar">
+        <div class="sidebar-head">
+          <h2>מסלול — Tour du Mont Blanc</h2>
+          <div class="trip-meta" id="trip-meta-display"></div>
+        </div>
+        <div class="sidebar-body" id="days-list"></div>
+      </div>
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-overlay">
+          <button class="map-ctrl on" id="ctrl-3d" onclick="toggle3D()">תלת ממד</button>
+          <button class="map-ctrl on" id="ctrl-route" onclick="toggleRoute()">מסלול</button>
+          <button class="map-ctrl on" id="ctrl-huts" onclick="toggleHuts()">בקתות</button>
+        </div>
+        <div class="map-legend" id="map-legend">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">מסלול לפי ימים</div>
+          <div id="legend-days"></div>
+          <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+            <div class="legend-row"><div class="legend-dot booked"></div><span>מוזמן</span></div>
+            <div class="legend-row"><div class="legend-dot pending"></div><span>בתהליך</span></div>
+            <div class="legend-row"><div class="legend-dot none"></div><span>לא מוזמן</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ EQUIPMENT PANEL ══ -->
+    <div class="panel" id="equip-panel">
+      <div class="equip-sidebar">
+        <div class="equip-sidebar-head">
+          <h2>קבוצה</h2>
+          <div style="font-size:11px;color:var(--muted)">התקדמות הציוד</div>
+        </div>
+        <div class="equip-sidebar-body" id="member-progress-list"></div>
+      </div>
+      <div class="equip-main">
+        <div class="equip-header">
+          <div>
+            <h1 id="equip-viewing-name"></h1>
+            <div class="equip-header-sub" id="equip-progress-text"></div>
+          </div>
+          <span class="own-only" id="equip-own-badge"></span>
+        </div>
+        <div class="filter-bar" id="cat-filters"></div>
+        <div id="equip-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ ADMIN PANEL ══ -->
+    <div class="panel" id="admin-panel">
+      <div class="admin-nav">
+        <button class="admin-nav-item on" onclick="adminSection('overview',this)">סקירה כללית</button>
+        <button class="admin-nav-item" onclick="adminSection('huts',this)">בקתות ולינה</button>
+        <button class="admin-nav-item" onclick="adminSection('route',this)">מקטעי מסלול</button>
+        <button class="admin-nav-item" onclick="adminSection('members',this)">חברי קבוצה</button>
+        <button class="admin-nav-item" onclick="adminSection('trip',this)">פרטי טיול</button>
+      </div>
+      <div class="admin-body">
+
+        <!-- OVERVIEW -->
+        <div class="admin-section on" id="sec-overview">
+          <h2>סקירה כללית</h2>
+          <div class="admin-grid" id="overview-stats"></div>
+          <div class="sep"></div>
+          <h3 style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">סטטוס בקתות</h3>
+          <div id="overview-huts"></div>
+        </div>
+
+        <!-- HUTS -->
+        <div class="admin-section" id="sec-huts">
+          <h2>בקתות ולינה</h2>
+          <div class="add-form">
+            <h3>הוסף בקתה / לינה</h3>
+            <div class="form-grid">
+              <div class="field-sm"><label>שם</label><input type="text" id="h-name" placeholder="Refuge du..."></div>
+              <div class="field-sm"><label>יום</label><input type="number" id="h-day" min="1" max="14" placeholder="1"></div>
+              <div class="field-sm"><label>גובה (מ')</label><input type="number" id="h-alt" placeholder="2000"></div>
+              <div class="field-sm"><label>מדינה</label>
+                <select id="h-country"><option value="FR">צרפת (FR)</option><option value="IT">איטליה (IT)</option><option value="CH">שוויץ (CH)</option></select>
+              </div>
+              <div class="field-sm"><label>סטטוס</label>
+                <select id="h-status"><option value="none">לא מוזמן</option><option value="pending">בתהליך</option><option value="booked">מוזמן</option></select>
+              </div>
+              <div class="field-sm"><label>טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר"></div>
+              <div class="field-sm form-full"><label>הערות</label><textarea id="h-notes" placeholder="הערות חשובות..."></textarea></div>
+            </div>
+            <div class="actions">
+              <button class="btn-sm primary" onclick="addHut()">הוסף</button>
+            </div>
+          </div>
+          <div id="huts-list"></div>
+        </div>
+
+        <!-- ROUTE -->
+        <div class="admin-section" id="sec-route">
+          <h2>מקטעי מסלול</h2>
+          <div class="add-form">
+            <h3>הוסף / ערוך מקטע</h3>
+            <div class="form-grid">
+              <div class="field-sm"><label>יום</label><input type="number" id="r-day" min="1" placeholder="1"></div>
+              <div class="field-sm"><label>מ-</label><input type="text" id="r-from" placeholder="Chamonix"></div>
+              <div class="field-sm"><label>אל-</label><input type="text" id="r-to" placeholder="Les Contamines"></div>
+              <div class="field-sm"><label>מרחק (ק"מ)</label><input type="number" id="r-dist" placeholder="14"></div>
+              <div class="field-sm"><label>עלייה (מ')</label><input type="number" id="r-up" placeholder="1050"></div>
+              <div class="field-sm"><label>ירידה (מ')</label><input type="number" id="r-down" placeholder="800"></div>
+              <div class="field-sm"><label>זמן משוער</label><input type="text" id="r-time" placeholder="5-6 שעות"></div>
+              <div class="field-sm"><label>רמת קושי</label>
+                <select id="r-diff"><option>קל</option><option>קל-בינוני</option><option selected>בינוני</option><option>קשה</option><option>קשה מאוד</option></select>
+              </div>
+              <div class="field-sm form-full"><label>תיאור</label><textarea id="r-desc" placeholder="תיאור המקטע..."></textarea></div>
+            </div>
+            <div class="actions"><button class="btn-sm primary" onclick="addSegment()">הוסף מקטע</button></div>
+          </div>
+          <div id="segments-list"></div>
+        </div>
+
+        <!-- MEMBERS -->
+        <div class="admin-section" id="sec-members">
+          <h2>חברי קבוצה</h2>
+          <div class="add-form" style="background:var(--bg);padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--muted);border-right:2px solid var(--accent-border)">
+            הרשמה פתוחה — חברים נרשמים עצמאית דרך הקישור לאתר.
+            <br>כאן ניתן לשנות תפקידים.
+          </div>
+          <div id="members-list"></div>
+        </div>
+
+        <!-- TRIP INFO -->
+        <div class="admin-section" id="sec-trip">
+          <h2>פרטי הטיול</h2>
+          <div class="add-form" style="margin-bottom:0">
+            <h3>עדכן פרטי טיול</h3>
+            <div class="form-grid">
+              <div class="field-sm"><label>שם הטיול</label><input type="text" id="t-name"></div>
+              <div class="field-sm"><label>שם הקבוצה</label><input type="text" id="t-group"></div>
+              <div class="field-sm"><label>תאריך התחלה</label><input type="date" id="t-start"></div>
+              <div class="field-sm"><label>תאריך סיום</label><input type="date" id="t-end"></div>
+              <div class="field-sm form-full"><label>הערות כלליות</label><textarea id="t-notes"></textarea></div>
+            </div>
+            <div class="actions"><button class="btn-sm primary" onclick="saveTripInfo()">שמור</button></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+
+const EQUIPMENT = [
+  {id:'hiking-shoes',name:'נעלי טיולים',cat:'הלבשה ונעליים',note:''},
+  {id:'trekking-poles',name:'מקלות טיולים',cat:'ציוד טיולים',note:''},
+  {id:'backpack',name:'תיק טיולים',cat:'ציוד טיולים',note:''},
+  {id:'sleeping-bag',name:'שק שינה',cat:'שינה',note:''},
+  {id:'ear-plugs',name:'אטמי אוזניים',cat:'שינה',note:'אם צריכים'},
+  {id:'eye-mask',name:'כיסוי עיניים',cat:'שינה',note:''},
+  {id:'liner',name:'Liner — מצעים פנימיים',cat:'שינה',note:'חלק מהבקתות דורשות'},
+  {id:'towel-large',name:'מגבת גדולה Quick Dry',cat:'היגיינה',note:'מיקרופייבר, לגוף'},
+  {id:'towel-small',name:'מגבת קטנה Quick Dry',cat:'היגיינה',note:'לידיים'},
+  {id:'rain-cover',name:'כיסוי לתיק נגד גשם',cat:'ציוד טיולים',note:''},
+  {id:'headlamp',name:'פנס ראש',cat:'ציוד טיולים',note:'לא חובה, שימושי'},
+  {id:'sitting-pad',name:'Sitting Pad',cat:'ציוד טיולים',note:'אפשר לקנות בדקטלון שאמוניס'},
+  {id:'hydration',name:'שלוקר / בקבוקים',cat:'ציוד טיולים',note:'שלוקר לא חובה'},
+  {id:'sunglasses',name:'משקפי שמש',cat:'הלבשה ונעליים',note:''},
+  {id:'wide-hat',name:'כובע שוליים רחבים',cat:'הלבשה ונעליים',note:'שמכסה גם צוואר'},
+  {id:'buff',name:'Buff — חם צוואר',cat:'הלבשה ונעליים',note:''},
+  {id:'wool-hat',name:'כובע צמר',cat:'הלבשה ונעליים',note:'לבקתות ולילות'},
+  {id:'shirts',name:'חולצות',cat:'הלבשה ונעליים',note:'DriFit או רגיל'},
+  {id:'hiking-pants',name:'מכנסי טיולים',cat:'הלבשה ונעליים',note:'1 לפחות, + 2 שורטים'},
+  {id:'fleece',name:'פליז',cat:'הלבשה ונעליים',note:''},
+  {id:'jacket',name:'מעיל',cat:'הלבשה ונעליים',note:''},
+  {id:'socks',name:'גרביים',cat:'הלבשה ונעליים',note:''},
+  {id:'swimsuit',name:'בגד ים',cat:'הלבשה ונעליים',note:''},
+  {id:'flip-flops',name:'כפכפים',cat:'הלבשה ונעליים',note:'לבקתות'},
+  {id:'shampoo',name:'שמפו ו/או סבון',cat:'היגיינה',note:''},
+  {id:'toothbrush',name:'מברשת שיניים + משחה',cat:'היגיינה',note:''},
+  {id:'hairbrush',name:'מברשת שיער',cat:'היגיינה',note:''},
+  {id:'razor',name:'גילוח',cat:'היגיינה',note:''},
+  {id:'sunscreen',name:'קרם הגנה',cat:'היגיינה',note:'חשוב מאוד'},
+  {id:'lip-balm',name:'ליפ בלם לשפתיים',cat:'היגיינה',note:''},
+  {id:'deodorant',name:'דאודרונט',cat:'היגיינה',note:''},
+  {id:'nail-clipper',name:'קוצץ ציפורניים',cat:'היגיינה',note:''},
+  {id:'wet-wipes',name:'מגבונים',cat:'היגיינה',note:''},
+  {id:'meds',name:'תרופות אישיות',cat:'בריאות',note:'כדורים אישיים'},
+  {id:'first-aid',name:'ערכת עזרה ראשונה',cat:'בריאות',note:'אחת לקבוצה'},
+  {id:'power-bank',name:'סוללה ניידת',cat:'אלקטרוניקה',note:''},
+  {id:'adapter',name:'מתאם חשמל',cat:'אלקטרוניקה',note:'תקע אירופי'},
+];
+
+const DEFAULT_HUTS = [
+  // ── 23 ספטמבר — הגעה ──
+  {id:'la-folie-douce',name:'La Folie Douce Hotels Chamonix',day:0,date:'23.9',altitude:1035,country:'FR',
+   status:'booked',contact:'+33 4 50 18 01 11',
+   notes:'לינת הגעה. מלון בוטיק ב-240 Ave de Courmayeur, שאמוניס. מקושר לסקי-ריזורט La Folie Douce המפורסם.',
+   type:'hotel',lat:45.9193,lng:6.8697,website:'https://www.lafoliedouce.com/hotels/chamonix/'},
+
+  // ── 24 ספטמבר — לה-הוש ──
+  {id:'rockypop',name:'RockyPop Chamonix – Les Houches',day:1,date:'24.9',altitude:1004,country:'FR',
+   status:'booked',contact:'+33 4 50 21 17 60',
+   notes:'מלון עיצובי בלה-הוש. נקודת הזינוק הרשמית של TMB. ציוד אחרון, מנוחה לפני ההתחלה.',
+   type:'hotel',lat:45.8876,lng:6.7977,website:'https://www.rockypop.com/chamonix/'},
+
+  // ── 25 ספטמבר — גיט לה-פונטה ──
+  {id:'gite-pontet',name:'Gîte le Pontet',day:2,date:'25.9',altitude:1210,country:'FR',
+   status:'booked',contact:'+33 4 50 47 04 04',
+   notes:'גיט (אכסניה כפרית) ב-Les Contamines-Montjoie. לינה בדורמיטורי, ארוחת ערב ביתית. לקחת אוכל לפסגות.',
+   type:'hut',lat:45.8205,lng:6.7282,website:'https://www.gite-pontet.com'},
+
+  // ── 26 ספטמבר — ריפוג'יו אליזבטה ──
+  {id:'rifugio-elisabetta',name:"Rifugio Elisabetta Soldini",day:3,date:'26.9',altitude:2197,country:'IT',
+   status:'booked',contact:'+39 0165 844 080',
+   notes:'⚠️ שולמה מקדמה — נשאר לשלם ~35 יורו במקום! בקתה על גבול צרפת-איטליה ליד Col de la Seigne. נוף מדהים.',
+   type:'hut',lat:45.7157,lng:6.8746,website:'https://www.rifugioelisabetta.com'},
+
+  // ── 27 ספטמבר — קורמאייר ──
+  {id:'courmayeur-night',name:'לינה בקורמאייר',day:4,date:'27.9',altitude:1224,country:'IT',
+   status:'booked',contact:'',
+   notes:'לינה בעיר קורמאייר — מסעדות, קניות, ATM, מרפאה. יום קצר יחסית אחרי Elisabetta. יש זמן לנוח ולאכול טוב.',
+   type:'hotel',lat:45.7963,lng:6.9908,website:'https://www.courmayeur.eu'},
+
+  // ── 28 ספטמבר — אוברז' דה גלאסייר, לה-פולי ──
+  {id:'auberge-glaciers',name:"Auberge des Glaciers — La Fouly",day:5,date:'28.9',altitude:1610,country:'CH',
+   status:'booked',contact:'+41 27 783 11 71',
+   notes:'אכסניה במרכז לה-פולי, שוויץ. אחרי Grand Col Ferret (2537מ\') — כניסה לשוויץ. ארוחות ביתיות.',
+   type:'hut',lat:45.9326,lng:7.0986,website:'https://www.auberge-des-glaciers.ch'},
+
+  // ── 29 ספטמבר — רלה דארפט ──
+  {id:'relais-arpette',name:"Relais d'Arpette",day:6,date:'29.9',altitude:1627,country:'CH',
+   status:'booked',contact:'+41 27 783 12 21',
+   notes:"חווה אלפינית בעמק ארפט, 2 ק\"מ מעל שאמפה-לק. נקודת מוצא ל-Fenêtre d'Arpette (2665מ'). אוירה מיוחדת.",
+   type:'hut',lat:46.0097,lng:7.1580,website:'https://www.arpette.ch'},
+
+  // ── 30 ספטמבר — TBD ──
+  {id:'sept30-tbd',name:'לינה 30.9 — לא צוין',day:7,date:'30.9',altitude:1300,country:'CH',
+   status:'booked',contact:'',
+   notes:'מוזמן אך המקום לא צוין. ככל הנראה טריאנ, ואלורסין, או Col de Balme. עדכן בפאנל הניהול.',
+   type:'hut',lat:46.0520,lng:6.9990,website:''},
+
+  // ── 1 באוקטובר — שאמוניס, סיום ──
+  {id:'chamonix-end',name:'Chamonix — סיום TMB',day:8,date:'1.10',altitude:1035,country:'FR',
+   status:'booked',contact:'',
+   notes:'חזרה לשאמוניס — הסיום! 9 ימים, 3 מדינות, ~120 ק"מ.',
+   type:'town',lat:45.9237,lng:6.8694,website:'https://www.chamonix.com'},
+];
+
+const DEFAULT_SEGMENTS = [
+  {id:'day0',day:0,from:'הגעה',to:'Chamonix (La Folie Douce)',dist:0,up:0,down:0,date:'23.9',
+   time:'יום הגעה',diff:'—',desc:'הגעה לשאמוניס. קניית ציוד חסר, ארגון תיקים. לינה ב-La Folie Douce.'},
+  {id:'day1',day:1,from:'Chamonix',to:'Les Houches (RockyPop)',dist:7,up:250,down:250,date:'24.9',
+   time:'2 שעות',diff:'קל',desc:'מעבר קצר לה-הוש — נקודת הזינוק הרשמית של TMB. לינה ב-RockyPop, מנוחה לפני הטיפוס.'},
+  {id:'day2',day:2,from:'Les Houches',to:"Gîte le Pontet",dist:15,up:1100,down:850,date:'25.9',
+   time:'5-6 שעות',diff:'בינוני',desc:'יום ראשון של הליכה. Col de Voza → Les Contamines → Gîte le Pontet. נוף ראשון למסיב.'},
+  {id:'day3',day:3,from:'Gîte le Pontet',to:'Rifugio Elisabetta',dist:16,up:1700,down:650,date:'26.9',
+   time:'6-7 שעות',diff:'קשה',desc:"עלייה דרך Col du Bonhomme ו-Col de la Seigne (2516מ') — גבול צרפת-איטליה. נוף עצום."},
+  {id:'day4',day:4,from:'Rifugio Elisabetta',to:'Courmayeur',dist:12,up:300,down:1400,date:'27.9',
+   time:'4-5 שעות',diff:'בינוני',desc:'ירידה מ-Elisabetta דרך Val Veny לקורמאייר. יום קצר יחסית — זמן לנוח בעיר.'},
+  {id:'day5',day:5,from:'Courmayeur',to:"Auberge des Glaciers",dist:24,up:1750,down:1550,date:'28.9',
+   time:'8-9 שעות',diff:'קשה מאוד',desc:"יום הארוך ביותר! Bertone → Bonatti → Grand Col Ferret (2537מ') → לה-פולי, שוויץ."},
+  {id:'day6',day:6,from:'La Fouly',to:"Relais d'Arpette",dist:16,up:900,down:700,date:'29.9',
+   time:'5-6 שעות',diff:'בינוני',desc:"Val Ferret השוויצרי → שאמפה-לק → עמק ארפט. לינה ב-Relais d'Arpette."},
+  {id:'day7',day:7,from:"Relais d'Arpette",to:'לינה 30.9',dist:14,up:1400,down:1400,date:'30.9',
+   time:'6-7 שעות',diff:'קשה',desc:"Fenêtre d'Arpette (2665מ') — הנקודה הגבוהה ביותר במסלול שלנו! ירידה לטריאנ."},
+  {id:'day8',day:8,from:'ספטמבר 30',to:'Chamonix — סיום!',dist:16,up:1100,down:1700,date:'1.10',
+   time:'5-7 שעות',diff:'קשה',desc:"Col de Balme (2191מ') — גבול שוויץ-צרפת. ירידה לארז'אנטייר → שאמוניס. TMB נגמר!"},
+];
+
+// ── ACTUAL TMB TRAIL COORDINATES (anti-clockwise, per the group's itinerary) ──
+// Traced from the Tour of Mont Blanc Anti-Clockwise map with all key waypoints
+const TMB_DAYS = {
+
+  // DAY 1 (23-24.9): Chamonix → Les Houches (valley transfer)
+  1: [
+    [6.8694,45.9237], // Chamonix center
+    [6.8580,45.9190],
+    [6.8440,45.9110],
+    [6.8290,45.9030],
+    [6.8150,45.8960],
+    [6.8050,45.8920],
+    [6.7977,45.8876], // Les Houches — RockyPop, TMB official start
+  ],
+
+  // DAY 2 (24-25.9): Les Houches → Gîte le Pontet, Les Contamines
+  // Via: Col de Voza (1653m) → Bionnassay → Refuge de Miage → Refuge du Truc
+  2: [
+    [6.7977,45.8876], // Les Houches (start climb)
+    [6.7920,45.8850],
+    [6.7860,45.8820],
+    [6.7800,45.8790], // chemin vers Col de Voza
+    [6.7740,45.8760],
+    [6.7680,45.8730],
+    [6.7620,45.8710],
+    [6.7562,45.8683], // *** Col de Voza (1653m) — vue sur Mont Blanc ***
+    [6.7520,45.8660],
+    [6.7500,45.8630],
+    [6.7495,45.8600],
+    [6.7490,45.8570], // Bionnassay area
+    [6.7488,45.8540],
+    [6.7485,45.8510],
+    [6.7480,45.8480], // Refuge de Miage (1560m)
+    [6.7460,45.8450],
+    [6.7440,45.8420],
+    [6.7420,45.8395], // Refuge du Truc (1720m)
+    [6.7400,45.8370],
+    [6.7380,45.8340],
+    [6.7360,45.8310],
+    [6.7330,45.8275],
+    [6.7305,45.8245],
+    [6.7285,45.8220],
+    [6.7282,45.8210], // *** Gîte le Pontet / Les Contamines (1167m) ***
+  ],
+
+  // DAY 3 (25-26.9): Gîte le Pontet → Rifugio Elisabetta
+  // Via: Notre-Dame de la Gorge → Nant Borrant → La Balme → Col du Bonhomme →
+  //      Refuge Croix du Bonhomme → Les Chapieux → La Ville des Glaciers →
+  //      Col de la Seigne (2516m, FR/IT border) → Rifugio Elisabetta
+  3: [
+    [6.7282,45.8210], // Gîte le Pontet, Les Contamines
+    [6.7270,45.8175],
+    [6.7262,45.8140],
+    [6.7255,45.8103], // *** Notre-Dame de la Gorge (1210m) — TMB trailhead ***
+    [6.7248,45.8065],
+    [6.7240,45.8030],
+    [6.7232,45.7990],
+    [6.7225,45.7960], // *** Refuge Nant Borrant (1459m) ***
+    [6.7220,45.7925],
+    [6.7218,45.7895],
+    [6.7218,45.7862], // *** La Balme (1706m) ***
+    [6.7228,45.7830],
+    [6.7248,45.7800],
+    [6.7272,45.7770],
+    [6.7296,45.7740],
+    [6.7315,45.7710],
+    [6.7322,45.7680],
+    [6.7325,45.7650],
+    [6.7325,45.7618], // *** Col du Bonhomme (2329m) ***
+    [6.7350,45.7605],
+    [6.7390,45.7595],
+    [6.7440,45.7588],
+    [6.7497,45.7583], // *** Refuge de la Croix du Bonhomme (2443m) ***
+    [6.7560,45.7560],
+    [6.7640,45.7530],
+    [6.7730,45.7500],
+    [6.7830,45.7465],
+    [6.7940,45.7430],
+    [6.8040,45.7390],
+    [6.8130,45.7262], // *** Les Chapieux (1549m) ***
+    [6.8200,45.7220],
+    [6.8260,45.7175],
+    [6.8310,45.7107], // *** La Ville des Glaciers (1789m) ***
+    [6.8370,45.7075],
+    [6.8440,45.7048],
+    [6.8520,45.7030],
+    [6.8610,45.7018],
+    [6.8700,45.7015],
+    [6.8790,45.7018],
+    [6.8870,45.7025], // *** Col de la Seigne (2516m) — France/Italy border ***
+    [6.8850,45.7060],
+    [6.8825,45.7095],
+    [6.8800,45.7125],
+    [6.8773,45.7148],
+    [6.8746,45.7157], // *** Rifugio Elisabetta (2197m) ***
+  ],
+
+  // DAY 4 (26-27.9): Rifugio Elisabetta → Courmayeur
+  // Via: Val Veny → Lac Combal → La Visaille → Dolonne → Courmayeur
+  4: [
+    [6.8746,45.7157], // Rifugio Elisabetta
+    [6.8820,45.7185], // descending into Val Veny
+    [6.8920,45.7230],
+    [6.9020,45.7290],
+    [6.9120,45.7340],
+    [6.9230,45.7380], // *** Lac Combal (1980m) ***
+    [6.9340,45.7400],
+    [6.9430,45.7415],
+    [6.9510,45.7440],
+    [6.9580,45.7480],
+    [6.9640,45.7540],
+    [6.9690,45.7600],
+    [6.9730,45.7660],
+    [6.9760,45.7720],
+    [6.9790,45.7790],
+    [6.9820,45.7840], // *** Dolonne ***
+    [6.9855,45.7880],
+    [6.9880,45.7920],
+    [6.9900,45.7945],
+    [6.9908,45.7963], // *** Courmayeur (1224m) ***
+  ],
+
+  // DAY 5 (27-28.9): Courmayeur → Auberge des Glaciers, La Fouly
+  // Via: Rifugio Bertone → panoramic trail → Rifugio Bonatti →
+  //      Pas Entre-Deux-Sauts → Rifugio Elena → Grand Col Ferret (2537m, IT/CH) →
+  //      descent into Val Ferret Suisse → La Fouly
+  5: [
+    [6.9908,45.7963], // Courmayeur
+    [7.0010,45.8010], // climbing northeast from Courmayeur
+    [7.0120,45.8080],
+    [7.0230,45.8155],
+    [7.0340,45.8225],
+    [7.0450,45.8300],
+    [7.0540,45.8370],
+    [7.0600,45.8432], // *** Rifugio Bertone (1989m) — panoramic view of Mont Blanc ***
+    [7.0660,45.8468],
+    [7.0730,45.8495],
+    [7.0820,45.8515],
+    [7.0920,45.8535],
+    [7.1020,45.8558],
+    [7.1120,45.8578],
+    [7.1210,45.8595],
+    [7.1247,45.8611], // *** Rifugio Walter Bonatti (2025m) ***
+    [7.1310,45.8640],
+    [7.1380,45.8668],
+    [7.1430,45.8700],
+    [7.1450,45.8735],
+    [7.1440,45.8768],
+    [7.1410,45.8795],
+    [7.1360,45.8820],
+    [7.1290,45.8842], // *** Pas Entre-Deux-Sauts (2524m) ***
+    [7.1200,45.8858],
+    [7.1100,45.8868],
+    [7.1000,45.8873],
+    [7.0900,45.8875],
+    [7.0800,45.8876],
+    [7.0700,45.8876],
+    [7.0633,45.8875], // *** Rifugio Elena (2062m) ***
+    [7.0631,45.8892], // *** Grand Col Ferret (2537m) — Italy/Switzerland border ***
+    [7.0650,45.8940],
+    [7.0670,45.8990],
+    [7.0700,45.9050],
+    [7.0730,45.9110],
+    [7.0760,45.9170],
+    [7.0800,45.9230],
+    [7.0840,45.9280],
+    [7.0890,45.9310],
+    [7.0940,45.9322],
+    [7.0986,45.9326], // *** Auberge des Glaciers, La Fouly (1610m) ***
+  ],
+
+  // DAY 6 (28-29.9): La Fouly → Relais d'Arpette
+  // Via: La Fouly → Ferret → Praz de Fort → Issert → Champex-Lac → Arpette valley
+  6: [
+    [7.0986,45.9326], // La Fouly
+    [7.0990,45.9400],
+    [7.0996,45.9480], // *** Ferret village ***
+    [7.1010,45.9560],
+    [7.1020,45.9640],
+    [7.1040,45.9720],
+    [7.1065,45.9800], // *** Praz de Fort ***
+    [7.1090,45.9880],
+    [7.1120,45.9960],
+    [7.1150,46.0040], // *** Issert ***
+    [7.1220,46.0090],
+    [7.1310,46.0130],
+    [7.1400,46.0165],
+    [7.1490,46.0200],
+    [7.1580,46.0235],
+    [7.1660,46.0270],
+    [7.1702,46.0295], // *** Champex-Lac (1466m) ***
+    [7.1680,46.0260], // turning south toward Arpette valley
+    [7.1660,46.0225],
+    [7.1640,46.0195],
+    [7.1625,46.0165],
+    [7.1610,46.0135],
+    [7.1595,46.0115],
+    [7.1580,46.0097], // *** Relais d'Arpette (1627m) ***
+  ],
+
+  // DAY 7 (29-30.9): Relais d'Arpette → Trient (via Fenêtre d'Arpette 2665m)
+  // The highest point of the whole trip! Very steep descent to Trient.
+  7: [
+    [7.1580,46.0097], // Relais d'Arpette
+    [7.1590,46.0110], // start climbing toward Fenêtre
+    [7.1600,46.0120],
+    [7.1608,46.0130],
+    [7.1615,46.0140],
+    [7.1622,46.0150],
+    [7.1628,46.0160],
+    [7.1632,46.0175],
+    [7.1635,46.0188],
+    [7.1636,46.0200],
+    [7.1634,46.0215],
+    [7.1630,46.0230],
+    [7.1620,46.0245],
+    [7.1608,46.0255],
+    [7.1592,46.0262],
+    [7.1575,46.0268],
+    [7.1558,46.0272], // *** Fenêtre d'Arpette (2665m) — highest point! ***
+    [7.1530,46.0268], // steep descent to Trient
+    [7.1490,46.0270],
+    [7.1440,46.0278],
+    [7.1380,46.0295],
+    [7.1310,46.0320],
+    [7.1220,46.0355],
+    [7.1120,46.0390],
+    [7.1010,46.0420],
+    [7.0900,46.0450],
+    [7.0780,46.0472],
+    [7.0660,46.0488],
+    [7.0540,46.0500],
+    [7.0410,46.0510],
+    [7.0290,46.0515],
+    [7.0180,46.0518],
+    [7.0090,46.0520],
+    [6.9995,46.0520], // *** Trient (1279m) ***
+  ],
+
+  // DAY 8 (30.9-1.10): Trient → Chamonix
+  // Via: Tête de Tronchey climb → Col de Balme (2191m, CH/FR border) →
+  //      descent to Le Tour → Montroc → Argentière → Chamonix
+  8: [
+    [6.9995,46.0520], // Trient
+    [6.9940,46.0488],
+    [6.9880,46.0452],
+    [6.9820,46.0415],
+    [6.9760,46.0375], // climbing west toward Col de Balme
+    [6.9700,46.0335],
+    [6.9645,46.0295],
+    [6.9595,46.0255],
+    [6.9555,46.0215],
+    [6.9528,46.0175],
+    [6.9515,46.0138],
+    [6.9510,46.0100], // *** Refuge du Col de Balme (2191m) ***
+    [6.9505,46.0062], // *** Col de Balme — Switzerland/France border ***
+    [6.9490,46.0025], // entering France, descending east
+    [6.9470,45.9990],
+    [6.9450,45.9960],
+    [6.9430,45.9930],
+    [6.9410,45.9900],
+    [6.9400,45.9870], // *** Le Tour (1453m) ***
+    [6.9395,45.9840],
+    [6.9380,45.9815], // *** Montroc ***
+    [6.9365,45.9800],
+    [6.9355,45.9785],
+    [6.9343,45.9774], // *** Argentière (1252m) ***
+    [6.9310,45.9740],
+    [6.9270,45.9700],
+    [6.9230,45.9660],
+    [6.9180,45.9615],
+    [6.9130,45.9568],
+    [6.9080,45.9520],
+    [6.9030,45.9478],
+    [6.8980,45.9440],
+    [6.8930,45.9405],
+    [6.8880,45.9375],
+    [6.8830,45.9348],
+    [6.8790,45.9325],
+    [6.8750,45.9305],
+    [6.8720,45.9290],
+    [6.8694,45.9237], // *** Chamonix — FINISH! Tour du Mont Blanc complet ***
+  ],
+};
+
+// Key mountain passes & waypoints shown as small labels on the map
+const TMB_PASSES = [
+  {name:'Col de Voza',alt:'1653m',day:2,lng:6.7562,lat:45.8683},
+  {name:'Notre-Dame\nde la Gorge',alt:'1210m',day:3,lng:6.7255,lat:45.8103},
+  {name:'Refuge\nNant Borrant',alt:'1459m',day:3,lng:6.7225,lat:45.7960},
+  {name:'La Balme',alt:'1706m',day:3,lng:6.7218,lat:45.7862},
+  {name:'Col du\nBonhomme',alt:'2329m',day:3,lng:6.7325,lat:45.7618},
+  {name:'Refuge Croix\ndu Bonhomme',alt:'2443m',day:3,lng:6.7497,lat:45.7583},
+  {name:'Les Chapieux',alt:'1549m',day:3,lng:6.8130,lat:45.7262},
+  {name:'La Ville des\nGlaciers',alt:'1789m',day:3,lng:6.8310,lat:45.7107},
+  {name:'Col de la Seigne\n🇫🇷/🇮🇹',alt:'2516m',day:3,lng:6.8870,lat:45.7025},
+  {name:'Lac Combal',alt:'1980m',day:4,lng:6.9230,lat:45.7380},
+  {name:'Rifugio\nBertone',alt:'1989m',day:5,lng:7.0600,lat:45.8432},
+  {name:'Rifugio\nBonatti',alt:'2025m',day:5,lng:7.1247,lat:45.8611},
+  {name:'Pas Entre-\nDeux-Sauts',alt:'2524m',day:5,lng:7.1290,lat:45.8842},
+  {name:'Rifugio Elena',alt:'2062m',day:5,lng:7.0633,lat:45.8875},
+  {name:'Grand Col Ferret\n🇮🇹/🇨🇭',alt:'2537m',day:5,lng:7.0631,lat:45.8892},
+  {name:'Ferret',alt:'1705m',day:6,lng:7.0996,lat:45.9480},
+  {name:'Praz de Fort',alt:'1151m',day:6,lng:7.1065,lat:45.9800},
+  {name:'Champex-Lac',alt:'1466m',day:6,lng:7.1702,lat:46.0295},
+  {name:"Fenêtre d'Arpette\n⭐ point le plus haut",alt:'2665m',day:7,lng:7.1558,lat:46.0272},
+  {name:'Col de Balme\n🇨🇭/🇫🇷',alt:'2191m',day:8,lng:6.9505,lat:46.0062},
+  {name:'Le Tour',alt:'1453m',day:8,lng:6.9400,lat:45.9870},
+  {name:'Argentière',alt:'1252m',day:8,lng:6.9343,lat:45.9774},
+];
+
+// One bright color per hiking day
+const SEGMENT_COLORS = [
+  '#e76f51','#f4a261','#e9c46a','#2a9d8f',
+  '#457b9d','#9b5de5','#f15bb5','#00bbf9'
+];
+
+const DEFAULT_TRIP = {
+  name:'Tour du Mont Blanc 2025',
+  group:'הקבוצה',
+  start:'2025-09-23',
+  end:'2025-10-01',
+  notes:'TMB — 9 ימים, 3 מדינות (FR/IT/CH). 23.9–1.10.2025. ⚠️ Elisabetta: נשאר ~35€ לשלם במקום.'
+};
+
+const DEFAULT_USERS = [
+  {id:'u0',name:'מנהל',pass:'admin123',role:'admin',equip:{}},
+];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+
+// ── Supabase client ──
+const SUPABASE_URL = 'https://lefqiqhprqfrxjwlmbbx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XxuXP7f8DXuJe9QOdqG80Q_MUaw1EDM';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let S = {};
+let sbUser    = null;   // Supabase auth User
+let sbProfile = null;   // { id, display_name, role }
+let allProfiles = [];   // all users for member-progress view
+let equipProgress = {}; // { [userId]: { [itemId]: boolean } }
+let authMode = 'login'; // 'login' | 'signup'
+let realtimeChannel = null;
+
+let map, markers = [], routeVisible = true, hutsVisible = true, is3D = true;
+let mapLoaded = false;
+let routeLayerIds = [];
+let equipViewId = null;
+let activeDayCard = null;
+let activeAdminSection = 'overview';
+
+function loadState(){
+  try {
+    const saved = localStorage.getItem('tmb_v4');
+    if (saved) {
+      const p = JSON.parse(saved);
+      S.huts     = (p.huts     && p.huts.length)     ? p.huts     : JSON.parse(JSON.stringify(DEFAULT_HUTS));
+      S.segments = (p.segments && p.segments.length)  ? p.segments : JSON.parse(JSON.stringify(DEFAULT_SEGMENTS));
+      S.trip     = p.trip || {...DEFAULT_TRIP};
+    } else {
+      S.huts     = JSON.parse(JSON.stringify(DEFAULT_HUTS));
+      S.segments = JSON.parse(JSON.stringify(DEFAULT_SEGMENTS));
+      S.trip     = {...DEFAULT_TRIP};
+    }
+  } catch(e) {
+    console.error(e);
+    S.huts = JSON.parse(JSON.stringify(DEFAULT_HUTS));
+    S.segments = JSON.parse(JSON.stringify(DEFAULT_SEGMENTS));
+    S.trip = {...DEFAULT_TRIP};
+  }
+}
+
+function saveState(){
+  localStorage.setItem('tmb_v4', JSON.stringify({ huts:S.huts, segments:S.segments, trip:S.trip }));
+}
+
+function currentUser(){ return sbProfile; }
+function isAdmin(){ return sbProfile?.role === 'admin'; }
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+
+function toggleAuthMode(){
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  const isSignup = authMode === 'signup';
+  document.getElementById('auth-name-field').style.display = isSignup ? '' : 'none';
+  document.getElementById('auth-subtitle').textContent = isSignup
+    ? 'Tour du Mont Blanc — הרשמה'
+    : 'Tour du Mont Blanc — כניסה למערכת';
+  document.getElementById('auth-submit').textContent = isSignup ? 'הרשמה' : 'כניסה';
+  document.getElementById('auth-toggle-text').textContent = isSignup ? 'כבר יש לך חשבון?' : 'אין לך חשבון?';
+  document.querySelector('[onclick="toggleAuthMode()"]').textContent = isSignup ? 'כניסה' : 'הרשמה';
+  document.getElementById('auth-err').textContent = '';
+}
+
+async function doAuthAction(){
+  if (authMode === 'login') await doLogin();
+  else await doSignup();
+}
+
+async function doLogin(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const errEl = document.getElementById('auth-err');
+  const btn   = document.getElementById('auth-submit');
+  errEl.textContent = '';
+  if (!email || !pass){ errEl.textContent = 'נא למלא אימייל וסיסמה'; return; }
+  btn.disabled = true; btn.textContent = 'מתחבר...';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'כניסה';
+  if (error){
+    errEl.textContent = error.message.includes('Invalid login credentials')
+      ? 'אימייל או סיסמה שגויים'
+      : error.message;
+  }
+  // on success → onAuthStateChange fires → loadProfileAndStart()
+}
+
+async function doSignup(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const name  = document.getElementById('auth-name').value.trim();
+  const errEl = document.getElementById('auth-err');
+  const btn   = document.getElementById('auth-submit');
+  errEl.textContent = '';
+  if (!email || !pass || !name){ errEl.textContent = 'נא למלא את כל השדות'; return; }
+  if (pass.length < 6){ errEl.textContent = 'סיסמה חייבת להיות לפחות 6 תווים'; return; }
+  btn.disabled = true; btn.textContent = 'נרשם...';
+  const { error } = await sb.auth.signUp({
+    email, password: pass,
+    options: { data: { display_name: name } }
+  });
+  btn.disabled = false; btn.textContent = 'הרשמה';
+  if (error){ errEl.textContent = error.message; return; }
+  // on success → onAuthStateChange fires
+}
+
+async function doLogout(){
+  if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+  await sb.auth.signOut();
+  sbUser = null; sbProfile = null; allProfiles = []; equipProgress = {};
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('auth').style.display = 'flex';
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-pass').value  = '';
+  document.getElementById('auth-err').textContent = '';
+}
+
+// ══════════════════════════════════════════
+//  APP BOOT
+// ══════════════════════════════════════════
+
+async function loadProfileAndStart(){
+  // Show loading indicator
+  document.getElementById('auth-loading').style.display = 'block';
+
+  // Load own profile
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', sbUser.id).single();
+  sbProfile = profile;
+
+  // Load all profiles (for group overview)
+  const { data: profiles } = await sb.from('profiles').select('*');
+  allProfiles = profiles || [];
+
+  // Load all equipment progress
+  const { data: progress } = await sb.from('equipment_progress').select('*');
+  equipProgress = {};
+  (progress || []).forEach(row => {
+    if (!equipProgress[row.user_id]) equipProgress[row.user_id] = {};
+    equipProgress[row.user_id][row.item_id] = row.checked;
+  });
+
+  // Subscribe to realtime updates
+  setupRealtime();
+
+  document.getElementById('auth-loading').style.display = 'none';
+  startApp();
+}
+
+function setupRealtime(){
+  if (realtimeChannel) { sb.removeChannel(realtimeChannel); }
+  realtimeChannel = sb.channel('tmb-realtime')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'equipment_progress' },
+      payload => {
+        const row = payload.new || payload.old;
+        if (!row?.user_id) return;
+        if (!equipProgress[row.user_id]) equipProgress[row.user_id] = {};
+        if (payload.eventType === 'DELETE'){
+          delete equipProgress[row.user_id][row.item_id];
+        } else {
+          equipProgress[row.user_id][row.item_id] = row.checked;
+        }
+        // If viewing this user → re-render list
+        if (row.user_id === equipViewId) renderEquipPanel();
+        renderMemberProgress();
+      }
+    )
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'profiles' },
+      payload => {
+        const updated = payload.new;
+        if (!updated) return;
+        const idx = allProfiles.findIndex(p => p.id === updated.id);
+        if (idx >= 0) allProfiles[idx] = updated;
+        else allProfiles.push(updated);
+        if (updated.id === sbUser?.id) sbProfile = updated;
+        renderMemberProgress();
+        if (isAdmin()) renderMembersList();
+      }
+    )
+    .subscribe();
+}
+
+function startApp(){
+  if (!sbProfile) return;
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').classList.add('on');
+  document.getElementById('user-tag').textContent = sbProfile.display_name;
+  document.getElementById('user-role-tag').textContent = isAdmin() ? 'מנהל' : 'מטיל';
+  document.getElementById('admin-nav-btn').style.display = isAdmin() ? '' : 'none';
+  equipViewId = sbUser.id;
+  renderAll();
+  if (!map) initMap();
+  else refreshMapMarkers();
+}
+
+function renderAll(){
+  renderTripMeta();
+  renderDaysList();
+  renderEquipPanel();
+  renderMemberProgress();
+  if(isAdmin()){
+    renderOverview();
+    renderHutsList();
+    renderSegmentsList();
+    renderMembersList();
+    fillTripForm();
+  }
+}
+
+// ══════════════════════════════════════════
+//  MAP
+// ══════════════════════════════════════════
+
+function initMap(){
+  mapLoaded = false;
+  routeLayerIds = [];
+
+  // Satellite basemap — route lines clearly visible against aerial imagery
+  const satelliteStyle = {
+    version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources: {
+      'satellite': {
+        type: 'raster',
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        tileSize: 256,
+        attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        maxzoom: 19
+      },
+      'satellite-labels': {
+        type: 'raster',
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
+        tileSize: 256,
+        maxzoom: 19
+      }
+    },
+    layers: [
+      { id: 'satellite-layer', type: 'raster', source: 'satellite' },
+      { id: 'satellite-labels-layer', type: 'raster', source: 'satellite-labels', paint: { 'raster-opacity': 0.85 } }
+    ]
+  };
+
+  map = new maplibregl.Map({
+    container: 'map',
+    style: satelliteStyle,
+    center: [7.0, 45.85],
+    zoom: 9.5,
+    pitch: 55,
+    bearing: -20,
+    maxPitch: 85,
+    attributionControl: false
+  });
+
+  map.addControl(new maplibregl.NavigationControl({showCompass:true,showZoom:true}), 'bottom-right');
+  map.addControl(new maplibregl.AttributionControl({compact:true}), 'bottom-right');
+
+  map.on('load', () => {
+    // ── Terrain DEM (AWS elevation tiles — free, no key) ──
+    map.addSource('terrain-dem', {
+      type: 'raster-dem',
+      tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      encoding: 'terrarium',
+      maxzoom: 14
+    });
+    map.setTerrain({ source: 'terrain-dem', exaggeration: 1.5 });
+    map.setSky({
+      'sky-color': '#1a3a5c',
+      'sky-horizon-blend': 0.4,
+      'horizon-color': '#4a7fa5',
+      'horizon-fog-blend': 0.4,
+      'fog-color': '#2a4a6a',
+      'fog-ground-blend': 0.5
+    });
+
+    // ── Per-day route segments (white casing + colored line) ──
+    Object.entries(TMB_DAYS).forEach(([dayStr, coords]) => {
+      const day = Number(dayStr);
+      const color = SEGMENT_COLORS[(day - 1) % SEGMENT_COLORS.length];
+      const srcId = `tmb-day-${day}`;
+      const glowId = `tmb-glow-${day}`;   // white casing
+      const lineId = `tmb-line-${day}`;   // colored route
+
+      map.addSource(srcId, {
+        type: 'geojson',
+        data: { type:'Feature', geometry:{ type:'LineString', coordinates:coords } }
+      });
+      // Black shadow (bottom layer)
+      map.addLayer({ id:`tmb-shadow-${day}`, type:'line', source:srcId,
+        layout:{ 'line-cap':'round', 'line-join':'round' },
+        paint:{ 'line-color':'#000000', 'line-width':14, 'line-opacity':0.35 }
+      });
+      // White casing
+      map.addLayer({ id:glowId, type:'line', source:srcId,
+        layout:{ 'line-cap':'round', 'line-join':'round' },
+        paint:{ 'line-color':'#ffffff', 'line-width':10, 'line-opacity':0.9 }
+      });
+      // Colored route on top
+      map.addLayer({ id:lineId, type:'line', source:srcId,
+        layout:{ 'line-cap':'round', 'line-join':'round' },
+        paint:{ 'line-color':color, 'line-width':6, 'line-opacity':1 }
+      });
+
+      routeLayerIds.push(`tmb-shadow-${day}`, glowId, lineId);
+    });
+
+    // ── Pass / waypoint labels (small triangles on key cols) ──
+    addPassMarkers();
+
+    // ── Day midpoint labels (floating day number along each segment) ──
+    addDayMidpointMarkers();
+
+    mapLoaded = true;
+    refreshMapMarkers();
+  });
+
+  // Safety: if load already fired (e.g. cached style), re-check
+  map.on('idle', () => {
+    if (!mapLoaded && map.isStyleLoaded()) {
+      mapLoaded = true;
+      refreshMapMarkers();
+    }
+  });
+
+  // Click on map background → reset all day highlights
+  map.on('click', () => {
+    if (!mapLoaded) return;
+    routeLayerIds.forEach(id => {
+      if (!map.getLayer(id)) return;
+      if (id.startsWith('tmb-line-')) {
+        map.setPaintProperty(id, 'line-opacity', 1);
+        map.setPaintProperty(id, 'line-width', 6);
+      } else if (id.startsWith('tmb-glow-')) {
+        map.setPaintProperty(id, 'line-opacity', 0.9);
+        map.setPaintProperty(id, 'line-width', 10);
+      } else if (id.startsWith('tmb-shadow-')) {
+        map.setPaintProperty(id, 'line-opacity', 0.35);
+        map.setPaintProperty(id, 'line-width', 14);
+      }
+    });
+    document.querySelectorAll('.day-card').forEach(c => c.classList.remove('on'));
+  });
+}
+
+let passMarkers = [];
+function addPassMarkers(){
+  // Remove any old pass markers
+  passMarkers.forEach(m => m.remove());
+  passMarkers = [];
+
+  TMB_PASSES.forEach(p => {
+    const color = p.day >= 1 ? SEGMENT_COLORS[(p.day - 1) % SEGMENT_COLORS.length] : '#999';
+    const isPass = p.name.includes('Col') || p.name.includes('Fenêtre') || p.name.includes('Pas ');
+    const el = document.createElement('div');
+    el.style.cssText = `
+      display:flex;align-items:center;justify-content:center;
+      width:${isPass?18:12}px;height:${isPass?18:12}px;
+      background:${color};
+      clip-path:${isPass?'polygon(50% 0%, 0% 100%, 100% 100%)':'circle(50%)'};
+      cursor:pointer;transition:transform .15s;flex-shrink:0;
+    `;
+    el.title = `${p.name.replace('\n',' ')} (${p.alt})`;
+    el.addEventListener('mouseenter',()=>el.style.transform='scale(1.4)');
+    el.addEventListener('mouseleave',()=>el.style.transform='scale(1)');
+
+    const popup = new maplibregl.Popup({offset:10,closeButton:false,maxWidth:'200px'})
+      .setHTML(`
+        <div style="font-weight:700;font-size:12px;margin-bottom:2px;color:${color}">${p.name.replace('\n','<br>')}</div>
+        <div style="font-size:11px;color:#aaa">${p.alt} · יום ${p.day}</div>
+      `);
+
+    const m = new maplibregl.Marker({element:el,anchor:'center'})
+      .setLngLat([p.lng,p.lat])
+      .setPopup(popup)
+      .addTo(map);
+    passMarkers.push(m);
+  });
+}
+
+let dayMidMarkers = [];
+function addDayMidpointMarkers(){
+  dayMidMarkers.forEach(m => m.remove());
+  dayMidMarkers = [];
+
+  const DAY_NAMES = {
+    1: 'שאמוני → לה שו',
+    2: 'לה שו → Pontet',
+    3: 'Pontet → Elisabetta',
+    4: 'Elisabetta → קורמאייר',
+    5: 'קורמאייר → La Fouly',
+    6: 'La Fouly → Arpette',
+    7: 'Arpette → Trient',
+    8: 'Trient → שאמוני',
+  };
+
+  Object.entries(TMB_DAYS).forEach(([dayStr, coords]) => {
+    const day = Number(dayStr);
+    const color = SEGMENT_COLORS[(day - 1) % SEGMENT_COLORS.length];
+    // Pick a point ~40% along the segment for the label (avoid midpoint which may be at a pass)
+    const idx = Math.floor(coords.length * 0.4);
+    const [lng, lat] = coords[idx];
+
+    const el = document.createElement('div');
+    el.style.cssText = `
+      background:${color};
+      color:#fff;
+      font-weight:800;
+      font-size:13px;
+      width:28px;height:28px;
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      border:2.5px solid rgba(255,255,255,.9);
+      box-shadow:0 2px 8px rgba(0,0,0,.7);
+      cursor:pointer;
+      transition:transform .15s;
+      flex-shrink:0;
+    `;
+    el.textContent = day;
+    el.title = `יום ${day}: ${DAY_NAMES[day] || ''}`;
+    el.addEventListener('mouseenter', () => el.style.transform = 'scale(1.3)');
+    el.addEventListener('mouseleave', () => el.style.transform = 'scale(1)');
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const card = document.querySelector(`.day-card[data-day="${day}"]`);
+      if (card) selectDay(day, card);
+    });
+
+    const m = new maplibregl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([lng, lat])
+      .addTo(map);
+    dayMidMarkers.push(m);
+  });
+}
+
+function refreshMapMarkers(){
+  // Always clear existing markers (they are DOM elements, safe to remove anytime)
+  markers.forEach(m => m.remove());
+  markers = [];
+
+  if (!map) return;
+
+  // Re-add when map is ready; if not yet ready, wait for load event above
+  if (!mapLoaded) return;
+  if (!hutsVisible) return;
+
+  S.huts.forEach(hut => {
+    const el = document.createElement('div');
+    el.className = `hut-marker-el ${hut.status}`;
+    el.setAttribute('aria-label', hut.name);
+
+    // Day color — day 0 = arrival (gray), day 1-8 = segment colors
+    const dayColor = hut.day >= 1
+      ? SEGMENT_COLORS[(hut.day - 1) % SEGMENT_COLORS.length]
+      : '#666';
+
+    // Short label: first meaningful word(s) of hut name
+    const shortName = hut.name
+      .replace(/^Refuge\s+/i,'')
+      .replace(/^Rifugio\s+/i,'')
+      .replace(/^Gîte\s+/i,'')
+      .replace(/^Auberge\s+/i,'')
+      .replace(/^Relais\s+/i,'')
+      .replace(/^Chalet\s+/i,'')
+      .split(' ').slice(0,3).join(' ');
+
+    const dayLabel = hut.day === 0 ? '★' : hut.day;
+
+    el.innerHTML = `
+      <div class="hut-marker-circle" style="background:${dayColor};color:${dayColor}">${dayLabel}</div>
+      <div class="hut-marker-label">${shortName}</div>
+    `;
+
+    const websiteBtn = hut.website
+      ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #333">
+           <a href="${hut.website}" target="_blank" rel="noopener"
+              style="color:#c9a84c;font-size:11px;text-decoration:none;letter-spacing:.04em">
+             פתח אתר הזמנות →
+           </a>
+         </div>`
+      : '';
+
+    const contactHtml = hut.contact
+      ? `<div style="margin-top:4px;font-size:11px;color:#888">${hut.contact}</div>`
+      : '';
+
+    const dateChip = hut.date
+      ? `<span style="font-size:10px;padding:1px 6px;background:rgba(201,168,76,.15);color:#c9a84c;margin-right:6px">${hut.date}</span>`
+      : '';
+    const warningHtml = hut.notes && hut.notes.includes('⚠️')
+      ? `<div style="margin-top:6px;padding:6px 8px;background:rgba(212,136,58,.15);border-right:2px solid #d4883a;font-size:11px;color:#d4883a">${hut.notes}</div>`
+      : (hut.notes ? `<div class="popup-info">${hut.notes}</div>` : '');
+
+    const popup = new maplibregl.Popup({ offset: 16, closeButton: true, maxWidth: '290px' })
+      .setHTML(`
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          ${dateChip}
+          <span class="status-badge ${hut.status}" style="font-size:10px">${statusLabel(hut.status)}</span>
+        </div>
+        <div class="popup-name">${hut.name}</div>
+        <div class="popup-meta">${hut.day > 0 ? `יום ${hut.day} · ` : ''}${hut.altitude}מ' · ${hut.country}</div>
+        ${warningHtml}
+        ${contactHtml}
+        ${websiteBtn}
+      `);
+
+    const m = new maplibregl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([hut.lng, hut.lat])
+      .setPopup(popup)
+      .addTo(map);
+    markers.push(m);
+  });
+}
+
+function toggle3D(){
+  is3D = !is3D;
+  document.getElementById('ctrl-3d').classList.toggle('on', is3D);
+  if (!map) return;
+  map.easeTo({ pitch: is3D ? 55 : 0, duration: 600 });
+  if (mapLoaded) map.setTerrain(is3D ? { source:'terrain-dem', exaggeration:1.5 } : null);
+}
+
+function toggleRoute(){
+  routeVisible = !routeVisible;
+  document.getElementById('ctrl-route').classList.toggle('on', routeVisible);
+  if (!map || !mapLoaded) return;
+  const vis = routeVisible ? 'visible' : 'none';
+  routeLayerIds.forEach(id => {
+    if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
+  });
+  // Show/hide day midpoint number markers
+  dayMidMarkers.forEach(m => {
+    m.getElement().style.display = routeVisible ? '' : 'none';
+  });
+}
+
+function toggleHuts(){
+  hutsVisible = !hutsVisible;
+  document.getElementById('ctrl-huts').classList.toggle('on', hutsVisible);
+  refreshMapMarkers();
+}
+
+function flyToHut(hut){
+  if (!map || !hut.lat || !hut.lng) return;
+  map.flyTo({ center:[hut.lng, hut.lat], zoom:13, pitch:55, duration:1000 });
+}
+
+function statusLabel(s){
+  return s==='booked'?'מוזמן':s==='pending'?'בתהליך':'לא מוזמן';
+}
+
+// ══════════════════════════════════════════
+//  SIDEBAR
+// ══════════════════════════════════════════
+
+function renderTripMeta(){
+  const el=document.getElementById('trip-meta-display');
+  const t=S.trip;
+  const startFmt=t.start?new Date(t.start).toLocaleDateString('he-IL',{day:'numeric',month:'long'}):'—';
+  const endFmt=t.end?new Date(t.end).toLocaleDateString('he-IL',{day:'numeric',month:'long'}):'—';
+  el.innerHTML=`
+    <div class="trip-meta-row"><span class="label">קבוצה</span><span class="val">${t.group}</span></div>
+    <div class="trip-meta-row"><span class="label">תאריכים</span><span class="val">${startFmt} — ${endFmt}</span></div>
+  `;
+}
+
+function renderDaysList(){
+  // Update map legend with day colors
+  const legendDays = document.getElementById('legend-days');
+  if (legendDays) {
+    const segsForLegend = [...S.segments].sort((a,b)=>a.day-b.day);
+    // Compact: colored swatch + day number, 2 per row
+    const chunks = [];
+    for (let i=0; i<segsForLegend.length; i+=2) {
+      chunks.push(segsForLegend.slice(i,i+2));
+    }
+    legendDays.innerHTML = chunks.map(pair =>
+      `<div style="display:flex;gap:10px;margin-bottom:5px">${pair.map(s=>{
+        const c=SEGMENT_COLORS[(s.day-1)%SEGMENT_COLORS.length];
+        return `<div style="display:flex;align-items:center;gap:5px;min-width:60px">
+          <div style="width:16px;height:3px;background:${c};border-radius:2px;flex-shrink:0"></div>
+          <span style="color:var(--text);font-size:10px">יום ${s.day}</span>
+        </div>`;
+      }).join('')}</div>`
+    ).join('');
+  }
+
+  const el=document.getElementById('days-list');
+  const segs=[...S.segments].sort((a,b)=>a.day-b.day);
+  if(!segs.length){el.innerHTML='<div class="empty-state">אין מקטעים</div>';return;}
+  el.innerHTML=segs.map(seg=>{
+    const hut=S.huts.find(h=>h.day===seg.day&&h.type!=='town')||S.huts.find(h=>h.day===seg.day);
+    const hutHtml=hut?`<div class="day-hut"><span class="day-hut-name">${hut.name}</span><span class="status-badge ${hut.status}">${statusLabel(hut.status)}</span></div>`:'';
+    const color = seg.day === 0 ? '#888' : SEGMENT_COLORS[(seg.day-1)%SEGMENT_COLORS.length];
+    const dateLabel = seg.date ? `<span style="color:var(--muted);font-size:10px;margin-right:auto">${seg.date}</span>` : '';
+    return`<div class="day-card" onclick="selectDay(${seg.day},this)" id="day-card-${seg.day}" data-day="${seg.day}" style="border-right:3px solid ${color}30">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0"></div>
+        <div class="day-num" style="margin-bottom:0">${seg.day === 0 ? 'הגעה' : `יום ${seg.day}`}</div>
+        ${dateLabel}
+      </div>
+      <div class="day-route">${seg.from} — ${seg.to}</div>
+      <div class="day-stats">
+        ${seg.dist ? `<span>${seg.dist} ק"מ</span>` : ''}
+        ${seg.up ? `<span>+${seg.up}מ'</span>` : ''}
+        <span>${seg.diff}</span>
+      </div>
+      ${hutHtml}
+    </div>`;
+  }).join('');
+}
+
+function selectDay(day, el){
+  document.querySelectorAll('.day-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+
+  // Fly to the accommodation for that day
+  const hut = S.huts.find(h => h.day === day);
+  if (hut && hut.lat && hut.lng) {
+    flyToHut(hut);
+  } else if (TMB_DAYS[day]) {
+    // fly to midpoint of day segment
+    const coords = TMB_DAYS[day];
+    const mid = coords[Math.floor(coords.length/2)];
+    if (map) map.flyTo({ center:mid, zoom:12, pitch:55, duration:800 });
+  }
+
+  // Visually dim all route layers, highlight selected day
+  if (map && mapLoaded) {
+    routeLayerIds.forEach(id => {
+      if (!map.getLayer(id)) return;
+      const lineMatch = id.match(/tmb-line-(\d+)/);
+      const glowMatch = id.match(/tmb-glow-(\d+)/);
+      const shadowMatch = id.match(/tmb-shadow-(\d+)/);
+      if (lineMatch) {
+        const d = Number(lineMatch[1]);
+        map.setPaintProperty(id, 'line-opacity', d === day ? 1 : 0.15);
+        map.setPaintProperty(id, 'line-width', d === day ? 7 : 2);
+      } else if (glowMatch) {
+        const d = Number(glowMatch[1]);
+        map.setPaintProperty(id, 'line-opacity', d === day ? 0.95 : 0.08);
+        map.setPaintProperty(id, 'line-width', d === day ? 11 : 3);
+      } else if (shadowMatch) {
+        const d = Number(shadowMatch[1]);
+        map.setPaintProperty(id, 'line-opacity', d === day ? 0.45 : 0.05);
+        map.setPaintProperty(id, 'line-width', d === day ? 15 : 4);
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════
+//  EQUIPMENT
+// ══════════════════════════════════════════
+
+function renderMemberProgress(){
+  const el = document.getElementById('member-progress-list');
+  el.innerHTML = allProfiles.map(p => {
+    const userEquip = equipProgress[p.id] || {};
+    const total = EQUIPMENT.length;
+    const done  = EQUIPMENT.filter(i => userEquip[i.id]).length;
+    const pct   = Math.round(done / total * 100);
+    return `<div class="member-progress ${equipViewId === p.id ? 'on' : ''}" onclick="viewEquip('${p.id}')">
+      <div class="mp-name"><span>${p.display_name}</span><span class="mp-pct">${pct}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function viewEquip(uid){
+  equipViewId = uid;
+  renderEquipPanel();
+  renderMemberProgress();
+}
+
+function renderEquipPanel(){
+  const viewUid = equipViewId || sbUser?.id;
+  if (!viewUid) return;
+  const viewProfile = allProfiles.find(p => p.id === viewUid) || sbProfile;
+  const isOwn = viewUid === sbUser?.id;
+  const userEquip = equipProgress[viewUid] || {};
+
+  document.getElementById('equip-viewing-name').textContent = isOwn ? 'הציוד שלי' : `הציוד של ${viewProfile?.display_name || ''}`;
+  const total = EQUIPMENT.length;
+  const done  = EQUIPMENT.filter(i => userEquip[i.id]).length;
+  document.getElementById('equip-progress-text').textContent = `${done} מתוך ${total} פריטים — ${Math.round(done/total*100)}%`;
+  document.getElementById('equip-own-badge').textContent = isOwn ? 'ניהול אישי' : 'צפייה בלבד';
+
+  const cats = [...new Set(EQUIPMENT.map(i => i.cat))];
+  const filterBar = document.getElementById('cat-filters');
+  const activeFilter = filterBar.dataset.active || 'all';
+  filterBar.innerHTML = `<button class="filter-btn ${activeFilter==='all'?'on':''}" onclick="setEquipFilter('all',this)">הכל</button>`
+    + cats.map(c => `<button class="filter-btn ${activeFilter===c?'on':''}" onclick="setEquipFilter('${c}',this)">${c}</button>`).join('');
+  filterBar.dataset.active = activeFilter;
+
+  const listEl = document.getElementById('equip-list');
+  const filteredCats = activeFilter === 'all' ? cats : [activeFilter];
+  listEl.innerHTML = filteredCats.map(cat => {
+    const items = EQUIPMENT.filter(i => i.cat === cat);
+    return `<div class="equip-cat">
+      <div class="equip-cat-title">${cat}</div>
+      ${items.map(item => {
+        const checked  = !!userEquip[item.id];
+        const disabled = !isOwn && !isAdmin();
+        return `<div class="equip-item">
+          <input type="checkbox" class="equip-cb" id="cb_${item.id}_${viewUid}"
+            ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}
+            onchange="toggleEquip('${viewUid}','${item.id}',this.checked)"
+            aria-label="${item.name}">
+          <div class="equip-text">
+            <div class="equip-name ${checked ? 'done' : ''}">${item.name}</div>
+            ${item.note ? `<div class="equip-note">${item.note}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function setEquipFilter(cat, btn){
+  document.getElementById('cat-filters').dataset.active = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderEquipPanel();
+}
+
+async function toggleEquip(uid, itemId, checked){
+  // Optimistic update
+  if (!equipProgress[uid]) equipProgress[uid] = {};
+  const prev = equipProgress[uid][itemId];
+  equipProgress[uid][itemId] = checked;
+
+  const label = document.querySelector(`#cb_${itemId}_${uid}`)?.closest('.equip-item')?.querySelector('.equip-name');
+  if (label) label.classList.toggle('done', checked);
+  const total = EQUIPMENT.length;
+  const done  = EQUIPMENT.filter(i => (equipProgress[uid]||{})[i.id]).length;
+  document.getElementById('equip-progress-text').textContent = `${done} מתוך ${total} פריטים — ${Math.round(done/total*100)}%`;
+  renderMemberProgress();
+
+  // Persist to Supabase
+  const { error } = await sb.from('equipment_progress').upsert({
+    user_id: uid, item_id: itemId, checked,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,item_id' });
+
+  if (error){
+    equipProgress[uid][itemId] = prev;
+    renderEquipPanel();
+    renderMemberProgress();
+    toast('שגיאה בשמירה', 'err');
+    console.error('toggleEquip error:', error);
+  }
+}
+
+// ══════════════════════════════════════════
+//  ADMIN — OVERVIEW
+// ══════════════════════════════════════════
+
+function renderOverview(){
+  const booked=S.huts.filter(h=>h.status==='booked').length;
+  const pending=S.huts.filter(h=>h.status==='pending').length;
+  const none=S.huts.filter(h=>h.status==='none').length;
+  const totalKm=S.segments.reduce((a,s)=>a+Number(s.dist||0),0);
+  document.getElementById('overview-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${S.huts.length}</div><div class="stat-label">לינות</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--ok)">${booked}</div><div class="stat-label">מוזמן</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--warn)">${pending}</div><div class="stat-label">בתהליך</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--danger)">${none}</div><div class="stat-label">לא מוזמן</div></div>
+    <div class="stat-card"><div class="stat-val">${S.segments.length}</div><div class="stat-label">מקטעים</div></div>
+    <div class="stat-card"><div class="stat-val">${totalKm}</div><div class="stat-label">ק"מ סה"כ</div></div>
+    <div class="stat-card"><div class="stat-val">${allProfiles.length}</div><div class="stat-label">מטיילים</div></div>
+  `;
+  document.getElementById('overview-huts').innerHTML=[...S.huts].sort((a,b)=>a.day-b.day).map(h=>`
+    <div class="list-item">
+      <div class="li-main">
+        <div class="li-name">${h.name}</div>
+        <div class="li-meta">יום ${h.day} · ${h.altitude}מ' · ${h.country}</div>
+      </div>
+      <select class="inline-select" onchange="quickUpdateHut('${h.id}','status',this.value)">
+        <option value="none" ${h.status==='none'?'selected':''}>לא מוזמן</option>
+        <option value="pending" ${h.status==='pending'?'selected':''}>בתהליך</option>
+        <option value="booked" ${h.status==='booked'?'selected':''}>מוזמן</option>
+      </select>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  ADMIN — HUTS
+// ══════════════════════════════════════════
+
+function addHut(){
+  const name=document.getElementById('h-name').value.trim();
+  if(!name){toast('נא להזין שם בקתה','err');return;}
+  const hut={
+    id:'h_'+Date.now(),
+    name,
+    day:Number(document.getElementById('h-day').value)||1,
+    altitude:Number(document.getElementById('h-alt').value)||0,
+    country:document.getElementById('h-country').value,
+    status:document.getElementById('h-status').value,
+    contact:document.getElementById('h-contact').value.trim(),
+    notes:document.getElementById('h-notes').value.trim(),
+    type:'hut',
+    lat:45.85,lng:7.0
+  };
+  S.huts.push(hut);
+  saveState();
+  renderHutsList();
+  renderOverview();
+  renderDaysList();
+  refreshMapMarkers();
+  toast('בקתה נוספה');
+  ['h-name','h-alt','h-contact','h-notes'].forEach(id=>document.getElementById(id).value='');
+}
+
+function quickUpdateHut(id,field,val){
+  const h=S.huts.find(x=>x.id===id);
+  if(!h) return;
+  h[field]=val;
+  saveState();
+  renderHutsList();
+  renderOverview();
+  renderDaysList();
+  refreshMapMarkers();
+  toast('עודכן');
+}
+
+function deleteHut(id){
+  S.huts=S.huts.filter(h=>h.id!==id);
+  saveState();
+  renderHutsList();
+  renderOverview();
+  renderDaysList();
+  refreshMapMarkers();
+  toast('נמחק');
+}
+
+function renderHutsList(){
+  const el=document.getElementById('huts-list');
+  const sorted=[...S.huts].sort((a,b)=>a.day-b.day);
+  if(!sorted.length){el.innerHTML='<div class="empty-state">אין בקתות</div>';return;}
+  el.innerHTML=sorted.map(h=>`
+    <div class="list-item">
+      <div class="li-main">
+        <div class="li-name">${h.name}</div>
+        <div class="li-meta">יום ${h.day} · ${h.altitude}מ' · <span class="country-flag">${h.country}</span></div>
+        ${h.notes?`<div class="li-meta" style="margin-top:3px">${h.notes}</div>`:''}
+        ${h.contact?`<div class="li-meta">${h.contact}</div>`:''}
+      </div>
+      <select class="inline-select" onchange="quickUpdateHut('${h.id}','status',this.value)">
+        <option value="none" ${h.status==='none'?'selected':''}>לא מוזמן</option>
+        <option value="pending" ${h.status==='pending'?'selected':''}>בתהליך</option>
+        <option value="booked" ${h.status==='booked'?'selected':''}>מוזמן</option>
+      </select>
+      <div class="li-actions">
+        <button class="btn-sm danger" onclick="deleteHut('${h.id}')">מחק</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  ADMIN — SEGMENTS
+// ══════════════════════════════════════════
+
+function addSegment(){
+  const from=document.getElementById('r-from').value.trim();
+  const to=document.getElementById('r-to').value.trim();
+  if(!from||!to){toast('נא למלא מ- ואל-','err');return;}
+  const seg={
+    id:'s_'+Date.now(),
+    day:Number(document.getElementById('r-day').value)||1,
+    from,to,
+    dist:Number(document.getElementById('r-dist').value)||0,
+    up:Number(document.getElementById('r-up').value)||0,
+    down:Number(document.getElementById('r-down').value)||0,
+    time:document.getElementById('r-time').value.trim(),
+    diff:document.getElementById('r-diff').value,
+    desc:document.getElementById('r-desc').value.trim()
+  };
+  S.segments.push(seg);
+  saveState();
+  renderSegmentsList();
+  renderDaysList();
+  renderOverview();
+  toast('מקטע נוסף');
+  ['r-from','r-to','r-dist','r-up','r-down','r-time','r-desc'].forEach(id=>document.getElementById(id).value='');
+}
+
+function deleteSegment(id){
+  S.segments=S.segments.filter(s=>s.id!==id);
+  saveState();
+  renderSegmentsList();
+  renderDaysList();
+  renderOverview();
+  toast('נמחק');
+}
+
+function renderSegmentsList(){
+  const el=document.getElementById('segments-list');
+  const sorted=[...S.segments].sort((a,b)=>a.day-b.day);
+  if(!sorted.length){el.innerHTML='<div class="empty-state">אין מקטעים</div>';return;}
+  el.innerHTML=sorted.map(s=>`
+    <div class="list-item">
+      <div class="li-main">
+        <div class="li-name">יום ${s.day} — ${s.from} → ${s.to}</div>
+        <div class="li-meta">${s.dist} ק"מ · +${s.up}מ' · ${s.diff} · ${s.time}</div>
+        ${s.desc?`<div class="li-meta" style="margin-top:3px">${s.desc}</div>`:''}
+      </div>
+      <div class="li-actions">
+        <button class="btn-sm danger" onclick="deleteSegment('${s.id}')">מחק</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  ADMIN — MEMBERS
+// ══════════════════════════════════════════
+
+async function toggleMemberRole(id){
+  const p = allProfiles.find(x => x.id === id);
+  if (!p) return;
+  if (id === sbUser?.id){ toast('לא ניתן לשנות תפקיד עצמך', 'err'); return; }
+  const newRole = p.role === 'admin' ? 'member' : 'admin';
+  const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', id);
+  if (error){ toast('שגיאה בעדכון תפקיד', 'err'); return; }
+  p.role = newRole;
+  renderMembersList();
+  renderOverview();
+  toast('תפקיד עודכן');
+}
+
+function renderMembersList(){
+  const el = document.getElementById('members-list');
+  if (!allProfiles.length){ el.innerHTML = '<div class="empty-state">אין חברים רשומים</div>'; return; }
+  el.innerHTML = allProfiles.map(p => `
+    <div class="list-item">
+      <div class="li-main">
+        <div class="li-name">${p.display_name} ${p.id === sbUser?.id ? '<span style="font-size:11px;color:var(--muted)">(אתה)</span>' : ''}</div>
+        <div class="li-meta" style="direction:ltr;text-align:right">${allProfiles.find(x=>x.id===p.id)?.id?.slice(0,8)}…</div>
+      </div>
+      <span class="member-role ${p.role}">${p.role === 'admin' ? 'מנהל' : 'מטיל'}</span>
+      <div class="li-actions">
+        <button class="btn-sm" onclick="toggleMemberRole('${p.id}')">${p.role === 'admin' ? 'הפוך למטיל' : 'הפוך למנהל'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  ADMIN — TRIP INFO
+// ══════════════════════════════════════════
+
+function fillTripForm(){
+  document.getElementById('t-name').value=S.trip.name||'';
+  document.getElementById('t-group').value=S.trip.group||'';
+  document.getElementById('t-start').value=S.trip.start||'';
+  document.getElementById('t-end').value=S.trip.end||'';
+  document.getElementById('t-notes').value=S.trip.notes||'';
+}
+
+function saveTripInfo(){
+  S.trip.name=document.getElementById('t-name').value.trim();
+  S.trip.group=document.getElementById('t-group').value.trim();
+  S.trip.start=document.getElementById('t-start').value;
+  S.trip.end=document.getElementById('t-end').value;
+  S.trip.notes=document.getElementById('t-notes').value.trim();
+  saveState();
+  renderTripMeta();
+  renderOverview();
+  toast('פרטי הטיול עודכנו');
+}
+
+// ══════════════════════════════════════════
+//  PANEL SWITCHING
+// ══════════════════════════════════════════
+
+function switchPanel(name, btn){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  const map_panel=document.getElementById('map-panel');
+  const equip_panel=document.getElementById('equip-panel');
+  const admin_panel=document.getElementById('admin-panel');
+  if(name==='map') map_panel.classList.add('on');
+  else if(name==='equip') equip_panel.classList.add('on');
+  else if(name==='admin'&&isAdmin()) admin_panel.classList.add('on');
+  // resize map on show
+  if(name==='map'&&map) setTimeout(()=>map.resize(),50);
+}
+
+function adminSection(name, btn){
+  document.querySelectorAll('.admin-nav-item').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('on'));
+  document.getElementById('sec-'+name).classList.add('on');
+  activeAdminSection=name;
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+
+let toastTimer=null;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='show '+(type==='err'?'err':type==='warn'?'warn':'ok');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.className='',2200);
+}
+
+// ══════════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════════
+
+document.addEventListener('keydown', e => {
+  const authVisible = document.getElementById('auth').style.display !== 'none';
+  if (e.key === 'Enter' && authVisible) doAuthAction();
+});
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+
+loadState();
+
+// Show loading while checking session
+document.getElementById('auth-loading').style.display = 'block';
+
+// Listen for auth state changes (login / logout / session restore)
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    sbUser = session.user;
+    await loadProfileAndStart();
+  } else {
+    sbUser = null; sbProfile = null;
+    document.getElementById('auth-loading').style.display = 'none';
+    document.getElementById('auth').style.display = 'flex';
+    document.getElementById('app').classList.remove('on');
+  }
+});
+
+// Check existing session on page load
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (!session) {
+    document.getElementById('auth-loading').style.display = 'none';
+  }
+  // If session exists → onAuthStateChange fires automatically
+});
+</script>
+</body>
+</html>
