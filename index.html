@@ -1133,30 +1133,39 @@ async function doLogout(){
 // ══════════════════════════════════════════
 
 async function loadProfileAndStart(){
-  // Show loading indicator
   document.getElementById('auth-loading').style.display = 'block';
+  try {
+    // Load own profile
+    const { data: profile, error: profileErr } = await sb.from('profiles').select('id,display_name,role,email,joined_at').eq('id', sbUser.id).single();
+    if (profileErr) console.warn('Profile load error:', profileErr.message);
+    sbProfile = profile;
 
-  // Load own profile
-  const { data: profile } = await sb.from('profiles').select('id,display_name,role,email,joined_at').eq('id', sbUser.id).single();
-  sbProfile = profile;
+    // Load all profiles (for group overview + admin panel)
+    const { data: profiles } = await sb.from('profiles').select('id,display_name,role,email,joined_at');
+    allProfiles = profiles || [];
 
-  // Load all profiles (for group overview + admin panel)
-  const { data: profiles } = await sb.from('profiles').select('id,display_name,role,email,joined_at');
-  allProfiles = profiles || [];
+    // Load all equipment progress (ignore RLS errors gracefully)
+    const { data: progress } = await sb.from('equipment_progress').select('*');
+    equipProgress = {};
+    (progress || []).forEach(row => {
+      if (!equipProgress[row.user_id]) equipProgress[row.user_id] = {};
+      equipProgress[row.user_id][row.item_id] = row.checked;
+    });
 
-  // Load all equipment progress
-  const { data: progress } = await sb.from('equipment_progress').select('*');
-  equipProgress = {};
-  (progress || []).forEach(row => {
-    if (!equipProgress[row.user_id]) equipProgress[row.user_id] = {};
-    equipProgress[row.user_id][row.item_id] = row.checked;
-  });
+    // Subscribe to realtime updates
+    setupRealtime();
 
-  // Subscribe to realtime updates
-  setupRealtime();
-
-  document.getElementById('auth-loading').style.display = 'none';
-  startApp();
+    document.getElementById('auth-loading').style.display = 'none';
+    startApp();
+  } catch(e) {
+    console.error('loadProfileAndStart failed:', e);
+    document.getElementById('auth-loading').style.display = 'none';
+    // Still try to show app if we have a profile
+    if (sbProfile) { startApp(); } else {
+      toast('שגיאה בטעינת הפרופיל — נסה לרענן', 'err');
+      document.getElementById('auth').style.display = 'flex';
+    }
+  }
 }
 
 function setupRealtime(){
@@ -2401,6 +2410,9 @@ document.getElementById('auth-loading').style.display = 'block';
 
 // Listen for auth state changes (login / logout / session restore)
 sb.auth.onAuthStateChange(async (event, session) => {
+  // TOKEN_REFRESHED fires silently in background — skip reload if already in app
+  if (event === 'TOKEN_REFRESHED' && sbUser) { sbUser = session.user; return; }
+
   if (session?.user) {
     sbUser = session.user;
     await loadProfileAndStart();
