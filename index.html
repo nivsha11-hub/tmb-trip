@@ -136,9 +136,13 @@ input,select,textarea{font:inherit;color:inherit}
 .hut-marker-el.booked .hut-marker-circle{box-shadow:0 0 0 2px #4caf50}
 .hut-marker-el.pending .hut-marker-circle{box-shadow:0 0 0 2px #ff9800}
 
-/* ─── EQUIPMENT PANEL ─── */
+/* ─── INFO PANEL (סקירה + ציוד) ─── */
 #equip-panel{flex-direction:row}
 .equip-sidebar{width:240px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.info-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.info-tab{flex:1;padding:12px 6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;border-radius:0;background:none;border-left:none;border-right:none;border-top:none}
+.info-tab:hover{color:var(--text)}
+.info-tab.on{color:var(--accent);border-bottom-color:var(--accent)}
 .equip-sidebar-head{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
 .equip-sidebar-head h2{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
 .equip-sidebar-body{flex:1;overflow-y:auto;padding:12px 0}
@@ -149,14 +153,34 @@ input,select,textarea{font:inherit;color:inherit}
 .mp-pct{font-size:11px;color:var(--accent)}
 .progress-bar{height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
-.equip-main{flex:1;overflow-y:auto;padding:24px 32px}
-.equip-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.equip-main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.equip-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;padding:24px 32px 0}
 .equip-header h1{font-size:18px;font-weight:700}
 .equip-header-sub{font-size:12px;color:var(--muted);margin-top:2px}
-.filter-bar{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap}
+.filter-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;padding:0 32px;flex-shrink:0}
 .filter-btn{padding:5px 12px;border:1px solid var(--border);font-size:12px;border-radius:var(--radius);color:var(--muted);transition:all .15s}
 .filter-btn:hover{border-color:var(--border2);color:var(--text)}
 .filter-btn.on{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
+
+/* ─── OVERVIEW PANEL ─── */
+.ov-section{padding:24px 28px;border-bottom:1px solid var(--border)}
+.ov-section:last-child{border-bottom:none}
+.ov-title{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.ov-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:0}
+.ov-card{background:var(--surface2);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius)}
+.ov-card-val{font-size:22px;font-weight:800;line-height:1;margin-bottom:4px}
+.ov-card-label{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.ov-hut-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.ov-hut-row:last-child{border-bottom:none}
+.ov-hut-day{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.ov-hut-info{flex:1;min-width:0}
+.ov-hut-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-hut-meta{font-size:10px;color:var(--muted);margin-top:1px}
+.ov-warning{background:rgba(212,136,58,.1);border:1px solid rgba(212,136,58,.3);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--warn);margin-top:12px;line-height:1.5}
+.ov-group-row{display:flex;align-items:center;gap:10px;padding:7px 0}
+.ov-group-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.sidebar-stat{padding:10px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);font-size:12px}
+.sidebar-stat-val{font-weight:700;font-size:15px}
 .equip-cat{margin-bottom:28px}
 .equip-cat-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .equip-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03)}
@@ -246,6 +270,70 @@ input,select,textarea{font:inherit;color:inherit}
 
 /* Focus visible */
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media(max-width:768px){
+  /* Topbar */
+  .topbar{padding:0 10px;gap:8px;height:44px}
+  .logo{font-size:11px}
+  .nav-btn{padding:5px 8px;font-size:11px}
+  .user-tag,.admin-tag{display:none}
+  .logout-btn{font-size:11px;padding:4px 6px}
+
+  /* Map panel — full screen, sidebar becomes bottom sheet */
+  #map-panel{flex-direction:column}
+  .map-sidebar{width:100%;height:200px;border-left:none;border-top:1px solid var(--border);flex-direction:row;overflow-x:auto;overflow-y:hidden}
+  .sidebar-head{width:140px;flex-shrink:0;border-bottom:none;border-left:1px solid var(--border);padding:10px 12px}
+  .sidebar-body{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;flex:1}
+  .day-card{min-width:180px;border-bottom:none;border-left:1px solid var(--border);flex-shrink:0;padding:10px 12px}
+  .day-hut{display:none}
+  .map-overlay{top:8px;left:8px;gap:6px}
+  .map-ctrl{padding:5px 10px;font-size:10px}
+  .map-legend{display:none}
+
+  /* Info panel (סקירה + ציוד) */
+  #equip-panel{flex-direction:column}
+  .equip-sidebar{width:100%;height:auto;border-left:none;border-bottom:1px solid var(--border);flex-shrink:0}
+  #sidebar-overview-section,#sidebar-equip-section{display:none!important}
+  .info-tabs{position:sticky;top:0;z-index:5;background:var(--surface)}
+  .equip-main{flex:1;min-height:0}
+  #overview-panel{padding:0}
+  .ov-section{padding:16px 16px}
+  .ov-cards{grid-template-columns:repeat(3,1fr)}
+  .equip-header{padding:16px 16px 0}
+  .filter-bar{padding:0 16px}
+  #equip-list{padding:0 16px 80px}
+
+  /* Equipment items */
+  .equip-item{padding:10px 0}
+
+  /* Auth */
+  #auth-box{width:calc(100vw - 32px);padding:28px 20px}
+
+  /* Admin panel */
+  .admin-nav{flex-direction:row;overflow-x:auto;height:auto;border-left:none;border-bottom:1px solid var(--border);padding:0;width:100%;flex-shrink:0}
+  .admin-nav-item{padding:10px 14px;border-bottom:none;border-left:none;white-space:nowrap;border-bottom:2px solid transparent;font-size:11px}
+  .admin-nav-item.on{border-bottom-color:var(--accent);background:transparent}
+  #admin-panel{flex-direction:column}
+  .admin-body{overflow-y:auto}
+  .admin-section{padding:16px}
+  .form-grid{grid-template-columns:1fr}
+  .admin-grid{grid-template-columns:repeat(3,1fr)}
+  .list-item{flex-wrap:wrap;gap:8px;padding:12px}
+  .member-card{padding:12px 14px}
+
+  /* Map controls — larger touch targets */
+  .maplibregl-ctrl-group button{width:36px!important;height:36px!important}
+  .maplibregl-ctrl-zoom-in,.maplibregl-ctrl-zoom-out,.maplibregl-ctrl-compass{width:36px!important;height:36px!important}
+}
+
+@media(max-width:480px){
+  .nav{gap:0}
+  .nav-btn{padding:4px 7px;font-size:10px;letter-spacing:.03em}
+  .ov-cards{grid-template-columns:repeat(2,1fr)}
+  .admin-grid{grid-template-columns:repeat(2,1fr)}
+  .day-card{min-width:160px}
+}
 </style>
 </head>
 <body>
@@ -283,7 +371,7 @@ input,select,textarea{font:inherit;color:inherit}
     <div class="logo">Mont Blanc</div>
     <div class="nav">
       <button class="nav-btn on" onclick="switchPanel('map',this)">מפה</button>
-      <button class="nav-btn" onclick="switchPanel('equip',this)">ציוד</button>
+      <button class="nav-btn" onclick="switchPanel('equip',this)">סקירה</button>
       <button class="nav-btn" id="admin-nav-btn" onclick="switchPanel('admin',this)" style="display:none">ניהול</button>
     </div>
     <div class="topbar-right">
@@ -325,23 +413,45 @@ input,select,textarea{font:inherit;color:inherit}
 
     <!-- ══ EQUIPMENT PANEL ══ -->
     <div class="panel" id="equip-panel">
+      <!-- SIDEBAR -->
       <div class="equip-sidebar">
-        <div class="equip-sidebar-head">
-          <h2>קבוצה</h2>
-          <div style="font-size:11px;color:var(--muted)">התקדמות הציוד</div>
+        <!-- Tab switcher -->
+        <div class="info-tabs">
+          <button class="info-tab on" id="tab-overview" onclick="switchInfoTab('overview',this)">סקירה</button>
+          <button class="info-tab" id="tab-equip" onclick="switchInfoTab('equip',this)">ציוד</button>
         </div>
-        <div class="equip-sidebar-body" id="member-progress-list"></div>
-      </div>
-      <div class="equip-main">
-        <div class="equip-header">
-          <div>
-            <h1 id="equip-viewing-name"></h1>
-            <div class="equip-header-sub" id="equip-progress-text"></div>
+        <!-- Member progress (visible in ציוד tab) -->
+        <div id="sidebar-equip-section" style="display:none;flex:1;overflow:hidden;display:none;flex-direction:column">
+          <div class="equip-sidebar-head" style="border-top:1px solid var(--border)">
+            <h2>קבוצה</h2>
+            <div style="font-size:11px;color:var(--muted)">התקדמות ציוד</div>
           </div>
-          <span class="own-only" id="equip-own-badge"></span>
+          <div class="equip-sidebar-body" id="member-progress-list"></div>
         </div>
-        <div class="filter-bar" id="cat-filters"></div>
-        <div id="equip-list"></div>
+        <!-- Overview quick stats (visible in סקירה tab) -->
+        <div id="sidebar-overview-section" style="flex:1;overflow-y:auto;padding:14px 0">
+          <div id="sidebar-quick-stats"></div>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div class="equip-main" style="position:relative">
+        <!-- Overview panel -->
+        <div id="overview-panel" style="height:100%;overflow-y:auto;padding:0">
+          <div id="overview-content"></div>
+        </div>
+        <!-- Equipment checklist -->
+        <div id="checklist-panel" style="display:none;height:100%;overflow:hidden;display:none;flex-direction:column">
+          <div class="equip-header">
+            <div>
+              <h1 id="equip-viewing-name"></h1>
+              <div class="equip-header-sub" id="equip-progress-text"></div>
+            </div>
+            <span class="own-only" id="equip-own-badge"></span>
+          </div>
+          <div class="filter-bar" id="cat-filters"></div>
+          <div id="equip-list" style="flex:1;overflow-y:auto;padding:0 32px 32px"></div>
+        </div>
       </div>
     </div>
 
@@ -1097,8 +1207,8 @@ function startApp(){
 function renderAll(){
   renderTripMeta();
   renderDaysList();
-  renderEquipPanel();
-  renderMemberProgress();
+  // Default: show overview tab
+  switchInfoTab('overview', document.getElementById('tab-overview'));
   if(isAdmin()){
     renderOverview();
     renderHutsList();
@@ -1552,6 +1662,199 @@ function selectDay(day, el){
 // ══════════════════════════════════════════
 //  EQUIPMENT
 // ══════════════════════════════════════════
+
+// ══════════════════════════════════════════
+//  INFO PANEL TABS
+// ══════════════════════════════════════════
+
+let activeInfoTab = 'overview';
+
+function switchInfoTab(tab, btn){
+  activeInfoTab = tab;
+  document.querySelectorAll('.info-tab').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+
+  const overviewPanel   = document.getElementById('overview-panel');
+  const checklistPanel  = document.getElementById('checklist-panel');
+  const sidebarOverview = document.getElementById('sidebar-overview-section');
+  const sidebarEquip    = document.getElementById('sidebar-equip-section');
+
+  if (tab === 'overview'){
+    overviewPanel.style.display   = 'block';
+    checklistPanel.style.display  = 'none';
+    sidebarOverview.style.display = 'block';
+    sidebarEquip.style.display    = 'none';
+    renderOverviewPanel();
+    renderSidebarStats();
+  } else {
+    overviewPanel.style.display   = 'none';
+    checklistPanel.style.display  = 'flex';
+    sidebarOverview.style.display = 'none';
+    sidebarEquip.style.display    = 'flex';
+    renderEquipPanel();
+    renderMemberProgress();
+  }
+}
+
+// ══════════════════════════════════════════
+//  OVERVIEW PANEL (for all users)
+// ══════════════════════════════════════════
+
+function renderSidebarStats(){
+  const el = document.getElementById('sidebar-quick-stats');
+  const tripStart = S.trip?.start ? new Date(S.trip.start) : null;
+  const today = new Date();
+  const diffDays = tripStart ? Math.ceil((tripStart - today) / 86400000) : null;
+
+  const totalEquipItems = EQUIPMENT.length;
+  const myEquip = equipProgress[sbUser?.id] || {};
+  const myDone  = EQUIPMENT.filter(i => myEquip[i.id]).length;
+  const myPct   = Math.round(myDone / totalEquipItems * 100);
+
+  const booked = S.huts.filter(h => h.status === 'booked').length;
+
+  el.innerHTML = `
+    <div class="sidebar-stat">
+      <span style="color:var(--muted)">ימים לטיול</span>
+      <span class="sidebar-stat-val" style="color:${diffDays > 0 ? 'var(--accent)' : 'var(--ok)'}">
+        ${diffDays === null ? '—' : diffDays > 0 ? diffDays : 'עבר'}
+      </span>
+    </div>
+    <div class="sidebar-stat">
+      <span style="color:var(--muted)">הציוד שלי</span>
+      <span class="sidebar-stat-val" style="color:var(--ok)">${myPct}%</span>
+    </div>
+    <div class="sidebar-stat">
+      <span style="color:var(--muted)">לינות מוזמנות</span>
+      <span class="sidebar-stat-val" style="color:var(--ok)">${booked}/${S.huts.length}</span>
+    </div>
+    <div class="sidebar-stat">
+      <span style="color:var(--muted)">ימי הליכה</span>
+      <span class="sidebar-stat-val">${S.segments.length}</span>
+    </div>
+  `;
+}
+
+function renderOverviewPanel(){
+  const el = document.getElementById('overview-content');
+
+  // --- Trip info ---
+  const trip = S.trip || {};
+  const startDate = trip.start ? new Date(trip.start).toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const endDate   = trip.end   ? new Date(trip.end).toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const today     = new Date();
+  const tripStart = trip.start ? new Date(trip.start) : null;
+  const diffDays  = tripStart ? Math.ceil((tripStart - today) / 86400000) : null;
+  const countdownHtml = diffDays === null ? '' :
+    diffDays > 0
+      ? `<div style="font-size:13px;color:var(--accent);margin-top:8px">עוד <strong>${diffDays}</strong> ימים לטיול</div>`
+      : `<div style="font-size:13px;color:var(--ok);margin-top:8px">הטיול ${Math.abs(diffDays)} ימים לפנינו!</div>`;
+
+  // --- Total km ---
+  const totalKm = S.segments.reduce((a,s) => a + Number(s.dist||0), 0);
+  const totalUp  = S.segments.reduce((a,s) => a + Number(s.up||0), 0);
+
+  // --- Group equipment average ---
+  const totalItems = EQUIPMENT.length;
+  const avgPct = allProfiles.length
+    ? Math.round(allProfiles.reduce((sum, p) => {
+        const done = EQUIPMENT.filter(i => (equipProgress[p.id]||{})[i.id]).length;
+        return sum + (done / totalItems * 100);
+      }, 0) / allProfiles.length)
+    : 0;
+
+  // --- Huts with warnings ---
+  const warnings = S.huts.filter(h => h.notes && h.notes.includes('⚠️'));
+  const warningsHtml = warnings.map(h =>
+    `<div class="ov-warning">⚠️ <strong>${h.name}</strong><br>${h.notes.replace('⚠️','').trim()}</div>`
+  ).join('');
+
+  // --- Huts list ---
+  const sortedHuts = [...S.huts].sort((a,b) => a.day - b.day);
+  const hutsHtml = sortedHuts.map(h => {
+    const color = h.day >= 1 ? SEGMENT_COLORS[(h.day-1) % SEGMENT_COLORS.length] : '#666';
+    const statusColor = h.status==='booked' ? 'var(--ok)' : h.status==='pending' ? 'var(--warn)' : 'var(--danger)';
+    const statusLabel = h.status==='booked' ? 'מוזמן' : h.status==='pending' ? 'בתהליך' : 'לא מוזמן';
+    return `<div class="ov-hut-row">
+      <div class="ov-hut-day" style="background:${color}">${h.day === 0 ? '★' : h.day}</div>
+      <div class="ov-hut-info">
+        <div class="ov-hut-name">${h.name}</div>
+        <div class="ov-hut-meta">${h.date || ''} · ${h.altitude}מ' · ${h.country}</div>
+      </div>
+      <span style="font-size:10px;color:${statusColor};flex-shrink:0">${statusLabel}</span>
+    </div>`;
+  }).join('');
+
+  // --- Group members ---
+  const AVATAR_COLORS = ['#e76f51','#f4a261','#2a9d8f','#457b9d','#9b5de5','#f15bb5','#00bbf9','#4a9e6e'];
+  const groupHtml = allProfiles.map((p,i) => {
+    const done = EQUIPMENT.filter(item => (equipProgress[p.id]||{})[item.id]).length;
+    const pct  = Math.round(done / totalItems * 100);
+    const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    return `<div class="ov-group-row">
+      <div class="ov-group-avatar" style="background:${color}">${(p.display_name||'?').charAt(0).toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${p.display_name}</div>
+        <div class="member-equip-bar" style="max-width:100%;margin-bottom:0">
+          <div class="member-equip-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:var(--accent);font-weight:600;flex-shrink:0;margin-right:8px">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="ov-section">
+      <div class="ov-title">פרטי הטיול</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:4px">${trip.name || 'Tour du Mont Blanc'}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px">${startDate} — ${endDate}</div>
+      ${countdownHtml}
+      ${trip.notes ? `<div style="font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.6;border-right:2px solid var(--border2);padding-right:10px">${trip.notes}</div>` : ''}
+    </div>
+
+    <div class="ov-section">
+      <div class="ov-title">סטטיסטיקות</div>
+      <div class="ov-cards">
+        <div class="ov-card">
+          <div class="ov-card-val">${S.huts.length}</div>
+          <div class="ov-card-label">לינות</div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-card-val">${S.segments.length}</div>
+          <div class="ov-card-label">ימי הליכה</div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-card-val" style="color:var(--ok)">${totalKm}</div>
+          <div class="ov-card-label">ק"מ סה"כ</div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-card-val" style="color:var(--accent)">+${totalUp.toLocaleString()}</div>
+          <div class="ov-card-label">מ' עלייה</div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-card-val">${allProfiles.length}</div>
+          <div class="ov-card-label">מטיילים</div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-card-val" style="color:${avgPct >= 80 ? 'var(--ok)' : 'var(--warn)'}">${avgPct}%</div>
+          <div class="ov-card-label">ציוד ממוצע</div>
+        </div>
+      </div>
+    </div>
+
+    ${warningsHtml ? `<div class="ov-section"><div class="ov-title">התראות חשובות</div>${warningsHtml}</div>` : ''}
+
+    <div class="ov-section">
+      <div class="ov-title">לינות לפי יום</div>
+      ${hutsHtml || '<div style="color:var(--muted);font-size:12px">אין לינות מוגדרות</div>'}
+    </div>
+
+    <div class="ov-section">
+      <div class="ov-title">התקדמות ציוד — קבוצה</div>
+      ${groupHtml || '<div style="color:var(--muted);font-size:12px">אין חברים רשומים</div>'}
+    </div>
+  `;
+}
 
 function renderMemberProgress(){
   const el = document.getElementById('member-progress-list');
