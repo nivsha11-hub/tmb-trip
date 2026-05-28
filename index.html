@@ -1181,7 +1181,7 @@ let equipViewId = null;
 let activeDayCard = null;
 let activeAdminSection = 'overview';
 
-function loadState(){
+function loadStateFromLocal(){
   try {
     const saved = localStorage.getItem('tmb_v4');
     if (saved) {
@@ -1195,15 +1195,51 @@ function loadState(){
       S.trip     = {...DEFAULT_TRIP};
     }
   } catch(e) {
-    console.error(e);
     S.huts = JSON.parse(JSON.stringify(DEFAULT_HUTS));
     S.segments = JSON.parse(JSON.stringify(DEFAULT_SEGMENTS));
     S.trip = {...DEFAULT_TRIP};
   }
 }
 
-function saveState(){
+// Load from Supabase (called after login when token is available)
+async function loadStateFromSupabase(){
+  if (!sbAccessToken) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/trip_data?id=eq.1&select=huts,segments,trip`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sbAccessToken}` }
+    });
+    if (!res.ok) return false;
+    const rows = await res.json();
+    const row = rows?.[0];
+    if (!row) return false;
+    if (row.huts     && row.huts.length)     S.huts     = row.huts;
+    if (row.segments && row.segments.length) S.segments = row.segments;
+    if (row.trip     && Object.keys(row.trip).length) S.trip = row.trip;
+    // Sync to localStorage as cache
+    localStorage.setItem('tmb_v4', JSON.stringify({ huts:S.huts, segments:S.segments, trip:S.trip }));
+    return true;
+  } catch(e) { console.warn('loadStateFromSupabase:', e); return false; }
+}
+
+function loadState(){ loadStateFromLocal(); } // initial load before auth
+
+async function saveState(){
+  // Always save to localStorage
   localStorage.setItem('tmb_v4', JSON.stringify({ huts:S.huts, segments:S.segments, trip:S.trip }));
+  // Save to Supabase if logged in
+  if (!sbAccessToken) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/trip_data?id=eq.1`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${sbAccessToken}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ huts: S.huts, segments: S.segments, trip: S.trip, updated_at: new Date().toISOString() })
+    });
+  } catch(e) { console.warn('saveState to Supabase:', e); }
 }
 
 function currentUser(){ return sbProfile; }
@@ -1329,6 +1365,9 @@ async function loadProfileAndStart(){
       if (!equipProgress[row.user_id]) equipProgress[row.user_id] = {};
       equipProgress[row.user_id][row.item_id] = row.checked;
     });
+
+    // Load trip data from Supabase (overrides localStorage)
+    await loadStateFromSupabase();
 
     // Subscribe to realtime updates
     setupRealtime();
@@ -2343,7 +2382,7 @@ async function addHut(){
     lat, lng
   };
   S.huts.push(hut);
-  saveState();
+  saveState(); // async — fire and forget
   renderHutsList();
   renderOverview();
   renderDaysList();
@@ -2361,7 +2400,7 @@ function quickUpdateHut(id,field,val){
   const h=S.huts.find(x=>x.id===id);
   if(!h) return;
   h[field]=val;
-  saveState();
+  saveState(); // async — fire and forget
   renderHutsList();
   renderOverview();
   renderDaysList();
@@ -2371,7 +2410,7 @@ function quickUpdateHut(id,field,val){
 
 function deleteHut(id){
   S.huts=S.huts.filter(h=>h.id!==id);
-  saveState();
+  saveState(); // async — fire and forget
   renderHutsList();
   renderOverview();
   renderDaysList();
@@ -2423,7 +2462,7 @@ function addSegment(){
     desc:document.getElementById('r-desc').value.trim()
   };
   S.segments.push(seg);
-  saveState();
+  saveState(); // async — fire and forget
   renderSegmentsList();
   renderDaysList();
   renderOverview();
@@ -2433,7 +2472,7 @@ function addSegment(){
 
 function deleteSegment(id){
   S.segments=S.segments.filter(s=>s.id!==id);
-  saveState();
+  saveState(); // async — fire and forget
   renderSegmentsList();
   renderDaysList();
   renderOverview();
@@ -2566,7 +2605,7 @@ function saveTripInfo(){
   S.trip.start=document.getElementById('t-start').value;
   S.trip.end=document.getElementById('t-end').value;
   S.trip.notes=document.getElementById('t-notes').value.trim();
-  saveState();
+  saveState(); // async — fire and forget
   renderTripMeta();
   renderOverview();
   toast('פרטי הטיול עודכנו');
