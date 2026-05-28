@@ -631,7 +631,7 @@ input,select,textarea{font:inherit;color:inherit}
               <div class="field-sm"><label>סטטוס</label>
                 <select id="h-status"><option value="none">לא מוזמן</option><option value="pending">בתהליך</option><option value="booked">מוזמן</option></select>
               </div>
-              <div class="field-sm"><label>טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר"></div>
+              <div class="field-sm"><label>טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר" oninput="onHutContactInput()"></div>
               <div class="field-sm form-full"><label>הערות</label><textarea id="h-notes" placeholder="הערות חשובות..."></textarea></div>
             </div>
             <div class="actions">
@@ -2243,6 +2243,95 @@ function onHutNameInput() {
   }
   if (statusEl) statusEl.textContent = 'מחפש מיקום...';
   _geoDebounce = setTimeout(() => geocodeHutName(name), 700);
+}
+
+// ── URL-based location extraction ──
+function onHutContactInput() {
+  const val = document.getElementById('h-contact').value.trim();
+  if (!val.startsWith('http')) return; // not a URL
+  clearTimeout(_geoDebounce);
+  _pendingGeo = null;
+  const statusEl = document.getElementById('geo-status');
+  if (statusEl) statusEl.textContent = 'מנתח קישור...';
+  _geoDebounce = setTimeout(() => extractLocationFromUrl(val), 700);
+}
+
+function extractCoordsFromGoogleMaps(url) {
+  // Format: @lat,lng,zoom  e.g. @45.8326,6.8652,17z
+  let m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  // Format: ?ll=lat,lng
+  m = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  // Format: ?q=lat,lng
+  m = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  // Format: /place/name/data=!...!3d45.8326!4d6.8652
+  m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  return null;
+}
+
+function extractNameFromUrl(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace('www.','');
+    const parts = u.pathname.split('/').filter(Boolean);
+
+    // Booking.com: /hotel/fr/hotel-name.html → "hotel name"
+    if (host.includes('booking.com')) {
+      const slug = parts[parts.length - 1]?.replace(/\.html?$/, '') || parts[parts.length - 2];
+      return slug?.replace(/[-_]/g, ' ');
+    }
+    // Airbnb: /rooms/12345 or /h/property-name → use name part
+    if (host.includes('airbnb')) {
+      const hIdx = parts.indexOf('h');
+      if (hIdx >= 0 && parts[hIdx+1]) return parts[hIdx+1].replace(/[-_]/g, ' ');
+    }
+    // Google Maps: place name in path /maps/place/Name/
+    if (host.includes('google') || host.includes('maps.app')) {
+      const placeIdx = parts.indexOf('place');
+      if (placeIdx >= 0 && parts[placeIdx+1]) {
+        return decodeURIComponent(parts[placeIdx+1]).replace(/\+/g, ' ');
+      }
+    }
+    // Generic: take last meaningful path segment
+    const last = parts.filter(p => p.length > 3 && !/^\d+$/.test(p)).pop();
+    return last ? decodeURIComponent(last).replace(/[-_]/g, ' ').replace(/\.html?$/, '') : null;
+  } catch(e) { return null; }
+}
+
+async function extractLocationFromUrl(url) {
+  const statusEl = document.getElementById('geo-status');
+
+  // 1. Try direct coordinate extraction (Google Maps)
+  const directCoords = extractCoordsFromGoogleMaps(url);
+  if (directCoords) {
+    _pendingGeo = directCoords;
+    if (statusEl) statusEl.textContent = `📍 ${directCoords.lat.toFixed(4)}, ${directCoords.lng.toFixed(4)}`;
+    // Also auto-fill name if empty
+    const nameEl = document.getElementById('h-name');
+    if (!nameEl.value.trim()) {
+      const name = extractNameFromUrl(url);
+      if (name) nameEl.value = name.split(' ').map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ');
+    }
+    return;
+  }
+
+  // 2. Extract name from URL and geocode
+  const name = extractNameFromUrl(url);
+  if (name && name.length > 2) {
+    if (statusEl) statusEl.textContent = `מחפש "${name}"...`;
+    // Also fill name field if empty
+    const nameEl = document.getElementById('h-name');
+    if (!nameEl.value.trim()) {
+      nameEl.value = name.split(' ').map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ');
+    }
+    await geocodeHutName(name);
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'לא נמצא מיקום בקישור';
 }
 
 async function geocodeHutName(name) {
