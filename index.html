@@ -481,7 +481,7 @@ input,select,textarea{font:inherit;color:inherit}
           <div class="add-form">
             <h3>הוסף בקתה / לינה</h3>
             <div class="form-grid">
-              <div class="field-sm"><label>שם</label><input type="text" id="h-name" placeholder="Refuge du..."></div>
+              <div class="field-sm"><label>שם</label><input type="text" id="h-name" placeholder="Refuge du..." oninput="onHutNameInput()"></div>
               <div class="field-sm"><label>יום</label><input type="number" id="h-day" min="1" max="14" placeholder="1"></div>
               <div class="field-sm"><label>גובה (מ')</label><input type="number" id="h-alt" placeholder="2000"></div>
               <div class="field-sm"><label>מדינה</label>
@@ -494,7 +494,8 @@ input,select,textarea{font:inherit;color:inherit}
               <div class="field-sm form-full"><label>הערות</label><textarea id="h-notes" placeholder="הערות חשובות..."></textarea></div>
             </div>
             <div class="actions">
-              <button class="btn-sm primary" onclick="addHut()">הוסף</button>
+              <button class="btn-sm primary" id="btn-add-hut" onclick="addHut()">הוסף</button>
+              <span id="geo-status" style="font-size:11px;color:var(--muted);margin-right:8px"></span>
             </div>
           </div>
           <div id="huts-list"></div>
@@ -2027,9 +2028,81 @@ function renderOverview(){
 //  ADMIN — HUTS
 // ══════════════════════════════════════════
 
-function addHut(){
+// ── Geocoding via Nominatim (OSM) ──
+let _pendingGeo = null; // { lat, lng } if already resolved
+let _geoNameCache = {}; // cache name→coords
+let _geoDebounce = null;
+
+function onHutNameInput() {
+  const name = document.getElementById('h-name').value.trim();
+  _pendingGeo = null;
+  clearTimeout(_geoDebounce);
+  const statusEl = document.getElementById('geo-status');
+  if (!name || name.length < 3) { if (statusEl) statusEl.textContent = ''; return; }
+  if (_geoNameCache[name]) {
+    _pendingGeo = _geoNameCache[name];
+    if (statusEl) statusEl.textContent = `📍 ${_pendingGeo.lat.toFixed(4)}, ${_pendingGeo.lng.toFixed(4)}`;
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'מחפש מיקום...';
+  _geoDebounce = setTimeout(() => geocodeHutName(name), 700);
+}
+
+async function geocodeHutName(name) {
+  const statusEl = document.getElementById('geo-status');
+  // Search biased to TMB region (Mont Blanc massif area)
+  const viewbox = '5.8,46.4,7.9,45.4'; // W,N,E,S
+  const queries = [
+    name,
+    name + ' refuge',
+    name + ' mountain hut',
+  ];
+  for (const q of queries) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&viewbox=${viewbox}&accept-language=fr,en,it`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'TMB-TrekApp/1.0 (trek-app)' } });
+      if (!res.ok) continue;
+      const results = await res.json();
+      // Prefer results in TMB bounding box, fall back to any result
+      const inBbox = results.filter(r => {
+        const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+        return lat > 45.4 && lat < 46.4 && lng > 5.8 && lng < 7.9;
+      });
+      const best = (inBbox.length > 0 ? inBbox : results)[0];
+      if (best) {
+        const coords = { lat: parseFloat(best.lat), lng: parseFloat(best.lon) };
+        _pendingGeo = coords;
+        _geoNameCache[name] = coords;
+        if (statusEl) statusEl.textContent = `📍 ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+        return;
+      }
+    } catch(e) {}
+  }
+  // Not found
+  if (statusEl) statusEl.textContent = 'מיקום לא נמצא – ימוקם ידנית';
+}
+
+async function addHut(){
   const name=document.getElementById('h-name').value.trim();
   if(!name){toast('נא להזין שם בקתה','err');return;}
+
+  const btn = document.getElementById('btn-add-hut');
+  const statusEl = document.getElementById('geo-status');
+
+  // If geocoding not yet done, try now
+  let coords = _pendingGeo;
+  if (!coords) {
+    if (btn) { btn.disabled = true; btn.textContent = 'מאתר...'; }
+    if (statusEl) statusEl.textContent = 'מחפש מיקום...';
+    await geocodeHutName(name);
+    coords = _pendingGeo;
+    if (btn) { btn.disabled = false; btn.textContent = 'הוסף'; }
+  }
+
+  // Default to TMB center if still not found
+  const lat = coords?.lat ?? 45.85;
+  const lng = coords?.lng ?? 7.0;
+
   const hut={
     id:'h_'+Date.now(),
     name,
@@ -2040,7 +2113,7 @@ function addHut(){
     contact:document.getElementById('h-contact').value.trim(),
     notes:document.getElementById('h-notes').value.trim(),
     type:'hut',
-    lat:45.85,lng:7.0
+    lat, lng
   };
   S.huts.push(hut);
   saveState();
@@ -2048,7 +2121,9 @@ function addHut(){
   renderOverview();
   renderDaysList();
   refreshMapMarkers();
-  toast('בקתה נוספה');
+  toast(coords ? 'בקתה נוספה עם מיקום מדויק' : 'בקתה נוספה (מיקום ידני נדרש)');
+  _pendingGeo = null;
+  if (statusEl) statusEl.textContent = '';
   ['h-name','h-alt','h-contact','h-notes'].forEach(id=>document.getElementById(id).value='');
 }
 
