@@ -1136,20 +1136,46 @@ async function doLogout(){
 //  APP BOOT
 // ══════════════════════════════════════════
 
+async function fetchWithToken(path, token){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!res.ok) { console.warn('fetchWithToken', path, res.status); return null; }
+  return res.json();
+}
+
 async function loadProfileAndStart(){
   document.getElementById('auth-loading').style.display = 'block';
   try {
+    const token = sbAccessToken;
+
     // Load own profile
-    const { data: profile, error: profileErr } = await sb.from('profiles').select('id,display_name,role,email,joined_at').eq('id', sbUser.id).single();
-    if (profileErr) console.warn('Profile load error:', profileErr.message);
+    let profile = null;
+    if (token) {
+      const profiles = await fetchWithToken(`profiles?id=eq.${sbUser.id}&select=id,display_name,role,email,joined_at`, token);
+      profile = profiles?.[0] || null;
+    }
+    if (!profile) {
+      // fallback via supabase client
+      const { data } = await sb.from('profiles').select('id,display_name,role,email,joined_at').eq('id', sbUser.id).single();
+      profile = data;
+    }
     sbProfile = profile;
 
-    // Load all profiles (for group overview + admin panel)
-    const { data: profiles } = await sb.from('profiles').select('id,display_name,role,email,joined_at');
-    allProfiles = profiles || [];
+    // Load all profiles
+    const allP = token
+      ? await fetchWithToken('profiles?select=id,display_name,role,email,joined_at', token)
+      : (await sb.from('profiles').select('id,display_name,role,email,joined_at')).data;
+    allProfiles = allP || [];
 
-    // Load all equipment progress (ignore RLS errors gracefully)
-    const { data: progress } = await sb.from('equipment_progress').select('*');
+    // Load all equipment progress via raw fetch (bypasses client auth bug)
+    const progress = token
+      ? await fetchWithToken('equipment_progress?select=*', token)
+      : (await sb.from('equipment_progress').select('*')).data;
     equipProgress = {};
     (progress || []).forEach(row => {
       if (!equipProgress[row.user_id]) equipProgress[row.user_id] = {};
