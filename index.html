@@ -1928,6 +1928,12 @@ function setEquipFilter(cat, btn){
 }
 
 async function toggleEquip(uid, itemId, checked){
+  // Only allow editing own equipment (or admin editing others)
+  if (uid !== sbUser?.id && !isAdmin()){
+    toast('אין הרשאה לערוך ציוד של משתמש אחר', 'err');
+    return;
+  }
+
   // Optimistic update
   if (!equipProgress[uid]) equipProgress[uid] = {};
   const prev = equipProgress[uid][itemId];
@@ -1937,21 +1943,47 @@ async function toggleEquip(uid, itemId, checked){
   if (label) label.classList.toggle('done', checked);
   const total = EQUIPMENT.length;
   const done  = EQUIPMENT.filter(i => (equipProgress[uid]||{})[i.id]).length;
-  document.getElementById('equip-progress-text').textContent = `${done} מתוך ${total} פריטים — ${Math.round(done/total*100)}%`;
+  const progEl = document.getElementById('equip-progress-text');
+  if (progEl) progEl.textContent = `${done} מתוך ${total} פריטים — ${Math.round(done/total*100)}%`;
   renderMemberProgress();
 
-  // Persist to Supabase
-  const { error } = await sb.from('equipment_progress').upsert({
-    user_id: uid, item_id: itemId, checked,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'user_id,item_id' });
+  // Check if row exists first, then insert or update
+  const { data: existing, error: readErr } = await sb
+    .from('equipment_progress')
+    .select('user_id')
+    .eq('user_id', uid)
+    .eq('item_id', itemId)
+    .maybeSingle();
 
-  if (error){
+  if (readErr) {
+    console.error('toggleEquip read error:', readErr);
+    toast(`שגיאה: ${readErr.message}`, 'err');
+    equipProgress[uid][itemId] = prev;
+    renderEquipPanel();
+    return;
+  }
+
+  let saveError;
+  if (existing) {
+    const { error } = await sb
+      .from('equipment_progress')
+      .update({ checked, updated_at: new Date().toISOString() })
+      .eq('user_id', uid)
+      .eq('item_id', itemId);
+    saveError = error;
+  } else {
+    const { error } = await sb
+      .from('equipment_progress')
+      .insert({ user_id: uid, item_id: itemId, checked, updated_at: new Date().toISOString() });
+    saveError = error;
+  }
+
+  if (saveError) {
+    console.error('toggleEquip save error:', saveError);
+    toast(`שגיאה בשמירה: ${saveError.message}`, 'err');
     equipProgress[uid][itemId] = prev;
     renderEquipPanel();
     renderMemberProgress();
-    toast('שגיאה בשמירה', 'err');
-    console.error('toggleEquip error:', error);
   }
 }
 
