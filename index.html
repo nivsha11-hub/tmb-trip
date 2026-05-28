@@ -1020,6 +1020,7 @@ let allProfiles = [];   // all users for member-progress view
 let equipProgress = {}; // { [userId]: { [itemId]: boolean } }
 let authMode = 'login'; // 'login' | 'signup'
 let realtimeChannel = null;
+let sbAccessToken = null; // stored explicitly for direct fetch calls
 let inactivityTimer = null;
 
 let map, markers = [], routeVisible = true, hutsVisible = true, is3D = true;
@@ -1960,40 +1961,32 @@ async function toggleEquip(uid, itemId, checked){
   if (progEl) progEl.textContent = `${done} מתוך ${total} פריטים — ${Math.round(done/total*100)}%`;
   renderMemberProgress();
 
-  // Check if row exists first, then insert or update
-  const { data: existing, error: readErr } = await sb
-    .from('equipment_progress')
-    .select('user_id')
-    .eq('user_id', uid)
-    .eq('item_id', itemId)
-    .maybeSingle();
-
-  if (readErr) {
-    console.error('toggleEquip read error:', readErr);
-    toast(`שגיאה: ${readErr.message}`, 'err');
+  // Get fresh token (always refresh to avoid stale token issues)
+  const { data: sessionData } = await sb.auth.getSession();
+  const token = sessionData?.session?.access_token || sbAccessToken;
+  if (!token) {
+    toast('לא מחובר — נסה להתחבר מחדש', 'err');
     equipProgress[uid][itemId] = prev;
     renderEquipPanel();
     return;
   }
 
-  let saveError;
-  if (existing) {
-    const { error } = await sb
-      .from('equipment_progress')
-      .update({ checked, updated_at: new Date().toISOString() })
-      .eq('user_id', uid)
-      .eq('item_id', itemId);
-    saveError = error;
-  } else {
-    const { error } = await sb
-      .from('equipment_progress')
-      .insert({ user_id: uid, item_id: itemId, checked, updated_at: new Date().toISOString() });
-    saveError = error;
-  }
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates,return=minimal'
+  };
+  const body = JSON.stringify({ user_id: uid, item_id: itemId, checked, updated_at: new Date().toISOString() });
 
-  if (saveError) {
-    console.error('toggleEquip save error:', saveError);
-    toast(`שגיאה בשמירה: ${saveError.message}`, 'err');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/equipment_progress`, {
+    method: 'POST', headers, body
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    console.error('toggleEquip save error:', res.status, errBody);
+    toast(`שגיאה בשמירה: ${errBody.message || res.status}`, 'err');
     equipProgress[uid][itemId] = prev;
     renderEquipPanel();
     renderMemberProgress();
@@ -2410,6 +2403,9 @@ document.getElementById('auth-loading').style.display = 'block';
 
 // Listen for auth state changes (login / logout / session restore)
 sb.auth.onAuthStateChange(async (event, session) => {
+  // Always store the latest access token
+  sbAccessToken = session?.access_token || null;
+
   // TOKEN_REFRESHED fires silently in background — skip reload if already in app
   if (event === 'TOKEN_REFRESHED' && sbUser) { sbUser = session.user; return; }
 
@@ -2417,7 +2413,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     sbUser = session.user;
     await loadProfileAndStart();
   } else {
-    sbUser = null; sbProfile = null;
+    sbUser = null; sbProfile = null; sbAccessToken = null;
     document.getElementById('auth-loading').style.display = 'none';
     document.getElementById('auth').style.display = 'flex';
     document.getElementById('app').classList.remove('on');
