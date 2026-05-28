@@ -271,68 +271,126 @@ input,select,textarea{font:inherit;color:inherit}
 /* Focus visible */
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+/* ─── HAMBURGER BUTTON ─── */
+.hamburger{display:none;width:44px;height:44px;align-items:center;justify-content:center;flex-direction:column;gap:5px;flex-shrink:0;cursor:pointer}
+.hamburger span{display:block;width:20px;height:2px;background:var(--text);border-radius:2px;transition:all .22s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* ─── MOBILE DRAWER ─── */
+.mobile-drawer{
+  position:fixed;top:0;right:-300px;width:280px;height:100vh;
+  background:var(--surface);border-left:1px solid var(--border);
+  z-index:200;transition:right .25s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.mobile-drawer.open{right:0}
+.mobile-drawer-header{
+  padding:20px 20px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.mobile-drawer-logo{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.mobile-drawer-close{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px;cursor:pointer;border-radius:var(--radius);transition:color .15s}
+.mobile-drawer-close:hover{color:var(--text)}
+.mobile-drawer-user{padding:16px 20px;border-bottom:1px solid var(--border)}
+.mobile-drawer-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px}
+.mobile-drawer-role{font-size:12px;color:var(--muted)}
+.mobile-drawer-nav{flex:1;padding:8px 0;overflow-y:auto}
+.mobile-nav-btn{
+  display:flex;align-items:center;width:100%;padding:14px 20px;
+  font-size:15px;font-weight:500;color:var(--muted);
+  border-right:3px solid transparent;transition:all .15s;
+  text-align:right;gap:12px;
+}
+.mobile-nav-btn:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.mobile-nav-btn.on{color:var(--text);background:var(--accent-bg);border-right-color:var(--accent)}
+.mobile-drawer-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.mobile-logout-btn{
+  width:100%;padding:12px;font-size:14px;font-weight:500;
+  color:var(--danger);border:1px solid rgba(217,87,87,.3);
+  border-radius:var(--radius);transition:all .15s;
+}
+.mobile-logout-btn:hover{background:var(--danger-bg)}
+.mobile-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);
+  z-index:199;opacity:0;visibility:hidden;transition:all .25s;
+}
+.mobile-overlay.open{opacity:1;visibility:visible}
+
 /* ─── MOBILE RESPONSIVE ─── */
 @media(max-width:768px){
-  /* Topbar */
-  .topbar{padding:0 10px;gap:8px;height:44px}
-  .logo{font-size:11px}
-  .nav-btn{padding:5px 8px;font-size:11px}
-  .user-tag,.admin-tag{display:none}
-  .logout-btn{font-size:11px;padding:4px 6px}
+  /* Topbar — slim, hamburger only */
+  .topbar{padding:0 12px;gap:10px;height:52px}
+  .logo{font-size:13px;flex:1}
+  .nav{display:none}
+  .topbar-right{display:none}
+  .hamburger{display:flex}
 
-  /* Map panel — full screen, sidebar becomes bottom sheet */
+  /* Map panel */
   #map-panel{flex-direction:column}
-  .map-sidebar{width:100%;height:200px;border-left:none;border-top:1px solid var(--border);flex-direction:row;overflow-x:auto;overflow-y:hidden}
-  .sidebar-head{width:140px;flex-shrink:0;border-bottom:none;border-left:1px solid var(--border);padding:10px 12px}
+  .map-sidebar{width:100%;height:190px;border-left:none;border-top:1px solid var(--border);flex-direction:row;overflow-x:auto;overflow-y:hidden}
+  .sidebar-head{width:130px;flex-shrink:0;border-bottom:none;border-left:1px solid var(--border);padding:10px 12px}
+  .sidebar-head h2{font-size:10px}
   .sidebar-body{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;flex:1}
-  .day-card{min-width:180px;border-bottom:none;border-left:1px solid var(--border);flex-shrink:0;padding:10px 12px}
+  .day-card{min-width:160px;border-bottom:none;border-left:1px solid var(--border);flex-shrink:0;padding:10px 12px}
   .day-hut{display:none}
   .map-overlay{top:8px;left:8px;gap:6px}
-  .map-ctrl{padding:5px 10px;font-size:10px}
+  .map-ctrl{padding:6px 12px;font-size:11px}
   .map-legend{display:none}
 
-  /* Info panel (סקירה + ציוד) */
+  /* Info panel */
   #equip-panel{flex-direction:column}
   .equip-sidebar{width:100%;height:auto;border-left:none;border-bottom:1px solid var(--border);flex-shrink:0}
   #sidebar-overview-section,#sidebar-equip-section{display:none!important}
   .info-tabs{position:sticky;top:0;z-index:5;background:var(--surface)}
+  .info-tab{padding:14px 6px;font-size:13px}
   .equip-main{flex:1;min-height:0}
   #overview-panel{padding:0}
-  .ov-section{padding:16px 16px}
-  .ov-cards{grid-template-columns:repeat(3,1fr)}
+  .ov-section{padding:16px}
+  .ov-section h2{font-size:13px}
+  .ov-cards{grid-template-columns:repeat(2,1fr)}
+  .stat-val{font-size:22px}
   .equip-header{padding:16px 16px 0}
+  .equip-header h1{font-size:17px}
   .filter-bar{padding:0 16px}
-  #equip-list{padding:0 16px 80px}
-
-  /* Equipment items */
-  .equip-item{padding:10px 0}
+  #equip-list{padding:0 16px 100px}
+  .equip-item{padding:12px 0;gap:12px}
+  .equip-name{font-size:15px}
+  .equip-note{font-size:12px}
+  .equip-cb{width:20px;height:20px;flex-shrink:0}
+  #equip-save-bar{padding:12px 16px}
 
   /* Auth */
   #auth-box{width:calc(100vw - 32px);padding:28px 20px}
 
   /* Admin panel */
-  .admin-nav{flex-direction:row;overflow-x:auto;height:auto;border-left:none;border-bottom:1px solid var(--border);padding:0;width:100%;flex-shrink:0}
-  .admin-nav-item{padding:10px 14px;border-bottom:none;border-left:none;white-space:nowrap;border-bottom:2px solid transparent;font-size:11px}
-  .admin-nav-item.on{border-bottom-color:var(--accent);background:transparent}
   #admin-panel{flex-direction:column}
-  .admin-body{overflow-y:auto}
-  .admin-section{padding:16px}
+  .admin-nav{flex-direction:row;overflow-x:auto;height:auto;border-left:none;border-bottom:1px solid var(--border);padding:0;width:100%;flex-shrink:0;-webkit-overflow-scrolling:touch}
+  .admin-nav-item{padding:12px 16px;border-bottom:none;border-left:none;white-space:nowrap;border-bottom:2px solid transparent;font-size:13px}
+  .admin-nav-item.on{border-bottom-color:var(--accent);background:transparent}
+  .admin-body{overflow-y:auto;padding:16px}
+  .admin-section{padding:0;margin-bottom:24px}
+  .admin-section h2{font-size:15px;margin-bottom:16px}
   .form-grid{grid-template-columns:1fr}
-  .admin-grid{grid-template-columns:repeat(3,1fr)}
+  .field-sm label{font-size:12px}
+  .field-sm input,.field-sm select,.field-sm textarea{font-size:16px;padding:10px 12px}
+  .admin-grid{grid-template-columns:repeat(2,1fr)}
   .list-item{flex-wrap:wrap;gap:8px;padding:12px}
-  .member-card{padding:12px 14px}
+  .member-card{padding:14px}
+  .member-card-name{font-size:16px}
+  .add-form{padding:16px}
+  .add-form h3{font-size:14px;margin-bottom:12px}
 
-  /* Map controls — larger touch targets */
-  .maplibregl-ctrl-group button{width:36px!important;height:36px!important}
-  .maplibregl-ctrl-zoom-in,.maplibregl-ctrl-zoom-out,.maplibregl-ctrl-compass{width:36px!important;height:36px!important}
+  /* Map controls */
+  .maplibregl-ctrl-group button{width:40px!important;height:40px!important}
 }
 
 @media(max-width:480px){
-  .nav{gap:0}
-  .nav-btn{padding:4px 7px;font-size:10px;letter-spacing:.03em}
   .ov-cards{grid-template-columns:repeat(2,1fr)}
-  .admin-grid{grid-template-columns:repeat(2,1fr)}
-  .day-card{min-width:160px}
+  .admin-grid{grid-template-columns:1fr 1fr}
+  .day-card{min-width:150px}
+  .topbar{height:48px}
 }
 </style>
 </head>
@@ -367,11 +425,35 @@ input,select,textarea{font:inherit;color:inherit}
 
 <!-- ═══════════ APP ═══════════ -->
 <div id="app">
+  <!-- Mobile overlay + drawer -->
+  <div class="mobile-overlay" id="mobile-overlay" onclick="closeMobileNav()"></div>
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="mobile-drawer-header">
+      <div class="mobile-drawer-logo">Mont Blanc Trek</div>
+      <button class="mobile-drawer-close" onclick="closeMobileNav()">✕</button>
+    </div>
+    <div class="mobile-drawer-user">
+      <div class="mobile-drawer-name" id="drawer-name"></div>
+      <div class="mobile-drawer-role" id="drawer-role"></div>
+    </div>
+    <div class="mobile-drawer-nav">
+      <button class="mobile-nav-btn on" id="drawer-btn-map" onclick="switchPanel('map',null);closeMobileNav()">מפה</button>
+      <button class="mobile-nav-btn" id="drawer-btn-equip" onclick="switchPanel('equip',null);closeMobileNav()">סקירה וציוד</button>
+      <button class="mobile-nav-btn" id="drawer-btn-admin" style="display:none" onclick="switchPanel('admin',null);closeMobileNav()">ניהול</button>
+    </div>
+    <div class="mobile-drawer-footer">
+      <button class="mobile-logout-btn" onclick="doLogout()">יציאה מהחשבון</button>
+    </div>
+  </div>
+
   <div class="topbar">
-    <div class="logo">Mont Blanc</div>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="תפריט">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="logo">Mont Blanc Trek</div>
     <div class="nav">
-      <button class="nav-btn on" onclick="switchPanel('map',this)">מפה</button>
-      <button class="nav-btn" onclick="switchPanel('equip',this)">סקירה</button>
+      <button class="nav-btn on" id="nav-btn-map" onclick="switchPanel('map',this)">מפה</button>
+      <button class="nav-btn" id="nav-btn-equip" onclick="switchPanel('equip',this)">סקירה</button>
       <button class="nav-btn" id="admin-nav-btn" onclick="switchPanel('admin',this)" style="display:none">ניהול</button>
     </div>
     <div class="topbar-right">
@@ -1241,6 +1323,10 @@ function startApp(){
   document.getElementById('user-tag').textContent = sbProfile.display_name;
   document.getElementById('user-role-tag').textContent = isAdmin() ? 'מנהל' : 'מטיל';
   document.getElementById('admin-nav-btn').style.display = isAdmin() ? '' : 'none';
+  // Populate mobile drawer
+  document.getElementById('drawer-name').textContent = sbProfile.display_name;
+  document.getElementById('drawer-role').textContent = isAdmin() ? 'מנהל' : 'מטייל';
+  document.getElementById('drawer-btn-admin').style.display = isAdmin() ? '' : 'none';
   equipViewId = sbUser.id;
   renderAll();
   if (!map) initMap();
@@ -2402,17 +2488,41 @@ function saveTripInfo(){
 // ══════════════════════════════════════════
 
 function switchPanel(name, btn){
+  // Desktop nav buttons
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
+  if(btn) btn.classList.add('on');
+  else {
+    // Called from mobile drawer — highlight matching desktop btn too
+    const map={'map':'nav-btn-map','equip':'nav-btn-equip','admin':'admin-nav-btn'};
+    if(map[name]) document.getElementById(map[name])?.classList.add('on');
+  }
+  // Mobile drawer buttons
+  document.querySelectorAll('.mobile-nav-btn').forEach(b=>b.classList.remove('on'));
+  const drawerMap={map:'drawer-btn-map',equip:'drawer-btn-equip',admin:'drawer-btn-admin'};
+  if(drawerMap[name]) document.getElementById(drawerMap[name])?.classList.add('on');
+
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
-  const map_panel=document.getElementById('map-panel');
-  const equip_panel=document.getElementById('equip-panel');
-  const admin_panel=document.getElementById('admin-panel');
-  if(name==='map') map_panel.classList.add('on');
-  else if(name==='equip') equip_panel.classList.add('on');
-  else if(name==='admin'&&isAdmin()) admin_panel.classList.add('on');
-  // resize map on show
+  if(name==='map') document.getElementById('map-panel').classList.add('on');
+  else if(name==='equip') document.getElementById('equip-panel').classList.add('on');
+  else if(name==='admin'&&isAdmin()) document.getElementById('admin-panel').classList.add('on');
   if(name==='map'&&map) setTimeout(()=>map.resize(),50);
+}
+
+function toggleMobileNav(){
+  const drawer=document.getElementById('mobile-drawer');
+  const overlay=document.getElementById('mobile-overlay');
+  const burger=document.getElementById('hamburger-btn');
+  const open=drawer.classList.toggle('open');
+  overlay.classList.toggle('open',open);
+  burger.classList.toggle('open',open);
+  document.body.style.overflow=open?'hidden':'';
+}
+
+function closeMobileNav(){
+  document.getElementById('mobile-drawer').classList.remove('open');
+  document.getElementById('mobile-overlay').classList.remove('open');
+  document.getElementById('hamburger-btn').classList.remove('open');
+  document.body.style.overflow='';
 }
 
 function adminSection(name, btn){
