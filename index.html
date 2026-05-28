@@ -470,17 +470,17 @@ input,select,textarea{font:inherit;color:inherit}
       <div class="mobile-drawer-logo">Mont Blanc Trek</div>
       <button class="mobile-drawer-close" onclick="closeMobileNav()">✕</button>
     </div>
+    <!-- User info + logout at top — always visible -->
+    <div class="mobile-drawer-user">
+      <div class="mobile-drawer-name" id="drawer-name"></div>
+      <div class="mobile-drawer-role" id="drawer-role"></div>
+      <button class="mobile-logout-btn" style="margin-top:10px" onclick="doLogout()">התנתק</button>
+    </div>
+    <div style="height:1px;background:var(--border);margin:0"></div>
     <div class="mobile-drawer-nav">
       <button class="mobile-nav-btn on" id="drawer-btn-map" onclick="switchPanel('map',null);closeMobileNav()">מפה</button>
       <button class="mobile-nav-btn" id="drawer-btn-equip" onclick="switchPanel('equip',null);closeMobileNav()">סקירה וציוד</button>
       <button class="mobile-nav-btn" id="drawer-btn-admin" style="display:none" onclick="switchPanel('admin',null);closeMobileNav()">ניהול</button>
-    </div>
-    <div class="mobile-drawer-user">
-      <div class="mobile-drawer-name" id="drawer-name"></div>
-      <div class="mobile-drawer-role" id="drawer-role"></div>
-    </div>
-    <div class="mobile-drawer-footer">
-      <button class="mobile-logout-btn" onclick="doLogout()">יציאה מהחשבון</button>
     </div>
   </div>
 
