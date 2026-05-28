@@ -1019,6 +1019,7 @@ let allProfiles = [];   // all users for member-progress view
 let equipProgress = {}; // { [userId]: { [itemId]: boolean } }
 let authMode = 'login'; // 'login' | 'signup'
 let realtimeChannel = null;
+let inactivityTimer = null;
 
 let map, markers = [], routeVisible = true, hutsVisible = true, is3D = true;
 let mapLoaded = false;
@@ -1115,6 +1116,7 @@ async function doSignup(){
 }
 
 async function doLogout(){
+  clearTimeout(inactivityTimer); // stop inactivity timer
   if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
   await sb.auth.signOut();
   sbUser = null; sbProfile = null; allProfiles = []; equipProgress = {};
@@ -1193,6 +1195,7 @@ function setupRealtime(){
 
 function startApp(){
   if (!sbProfile) return;
+  resetInactivityTimer(); // start inactivity tracking
   document.getElementById('auth').style.display = 'none';
   document.getElementById('app').classList.add('on');
   document.getElementById('user-tag').textContent = sbProfile.display_name;
@@ -2340,6 +2343,26 @@ sb.auth.getSession().then(({ data: { session } }) => {
     document.getElementById('auth-loading').style.display = 'none';
   }
   // If session exists → onAuthStateChange fires automatically
+});
+
+// ── Inactivity logout after 5 minutes ──
+const INACTIVITY_MS = 5 * 60 * 1000; // 5 minutes
+
+function resetInactivityTimer() {
+  if (!sbUser) return; // only track when logged in
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(async () => {
+    if (sbUser) {
+      toast('התנתקת אוטומטית עקב חוסר פעילות', 'warn');
+      await new Promise(r => setTimeout(r, 1500)); // let toast show
+      doLogout();
+    }
+  }, INACTIVITY_MS);
+}
+
+// Track user activity
+['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(evt => {
+  document.addEventListener(evt, resetInactivityTimer, { passive: true });
 });
 </script>
 </body>
