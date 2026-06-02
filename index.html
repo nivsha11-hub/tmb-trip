@@ -268,6 +268,7 @@ input,select,textarea{font:inherit;color:inherit}
 #toast{position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:10px 18px;border-radius:var(--radius);z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);white-space:nowrap}
 #toast.ok{border-color:var(--ok-bg);color:var(--ok)}
 #toast.err{border-color:var(--danger-bg);color:var(--danger)}
+#toast.warn{border-color:rgba(212,136,58,.5);color:var(--warn)}
 #toast.show{opacity:1}
 
 /* empty states */
@@ -402,6 +403,7 @@ input,select,textarea{font:inherit;color:inherit}
 
   /* Auth */
   #auth-box{width:calc(100vw - 32px);padding:28px 20px}
+  #auth-box input{font-size:16px!important}
 
   /* Admin panel */
   #admin-panel{flex-direction:column}
@@ -1177,6 +1179,15 @@ const SUPABASE_URL = 'https://lefqiqhprqfrxjwlmbbx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlZnFpcWhwcnFmcnhqd2xtYmJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NTc0MDAsImV4cCI6MjA5NTUzMzQwMH0.C9-vaLfhqALbLU5KDCc5zGlcLdP8fa5j4M5szAek0Do';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// HTML-escape user content before inserting into innerHTML
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// Validate external URLs — only allow http/https
+function safeUrl(u){ return (typeof u==='string'&&/^https?:\/\//i.test(u.trim())) ? u.trim() : ''; }
+
 let S = {};
 let sbUser    = null;   // Supabase auth User
 let sbProfile = null;   // { id, display_name, role }
@@ -1736,9 +1747,10 @@ function refreshMapMarkers(){
       <div class="hut-marker-label">${shortName}</div>
     `;
 
-    const websiteBtn = hut.website
+    const hutSafeUrl = safeUrl(hut.website);
+    const websiteBtn = hutSafeUrl
       ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #333">
-           <a href="${hut.website}" target="_blank" rel="noopener"
+           <a href="${hutSafeUrl}" target="_blank" rel="noopener noreferrer"
               style="color:#c9a84c;font-size:11px;text-decoration:none;letter-spacing:.04em">
              פתח אתר הזמנות →
            </a>
@@ -1746,15 +1758,15 @@ function refreshMapMarkers(){
       : '';
 
     const contactHtml = hut.contact
-      ? `<div style="margin-top:4px;font-size:11px;color:#888">${hut.contact}</div>`
+      ? `<div style="margin-top:4px;font-size:11px;color:#888">${esc(hut.contact)}</div>`
       : '';
 
     const dateChip = hut.date
-      ? `<span style="font-size:10px;padding:1px 6px;background:rgba(201,168,76,.15);color:#c9a84c;margin-right:6px">${hut.date}</span>`
+      ? `<span style="font-size:10px;padding:1px 6px;background:rgba(201,168,76,.15);color:#c9a84c;margin-right:6px">${esc(hut.date)}</span>`
       : '';
     const warningHtml = hut.notes && hut.notes.includes('⚠️')
-      ? `<div style="margin-top:6px;padding:6px 8px;background:rgba(212,136,58,.15);border-right:2px solid #d4883a;font-size:11px;color:#d4883a">${hut.notes}</div>`
-      : (hut.notes ? `<div class="popup-info">${hut.notes}</div>` : '');
+      ? `<div style="margin-top:6px;padding:6px 8px;background:rgba(212,136,58,.15);border-right:2px solid #d4883a;font-size:11px;color:#d4883a">${esc(hut.notes)}</div>`
+      : (hut.notes ? `<div class="popup-info">${esc(hut.notes)}</div>` : '');
 
     const popup = new maplibregl.Popup({ offset: 16, closeButton: true, maxWidth: '290px' })
       .setHTML(`
@@ -1762,8 +1774,8 @@ function refreshMapMarkers(){
           ${dateChip}
           <span class="status-badge ${hut.status}" style="font-size:10px">${statusLabel(hut.status)}</span>
         </div>
-        <div class="popup-name">${hut.name}</div>
-        <div class="popup-meta">${hut.day > 0 ? `יום ${hut.day} · ` : ''}${hut.altitude}מ' · ${hut.country}</div>
+        <div class="popup-name">${esc(hut.name)}</div>
+        <div class="popup-meta">${hut.day > 0 ? `יום ${hut.day} · ` : ''}${esc(String(hut.altitude))}מ' · ${esc(hut.country)}</div>
         ${warningHtml}
         ${contactHtml}
         ${websiteBtn}
@@ -1855,20 +1867,20 @@ function renderDaysList(){
   if(!segs.length){el.innerHTML='<div class="empty-state">אין מקטעים</div>';return;}
   el.innerHTML=segs.map(seg=>{
     const hut=S.huts.find(h=>h.day===seg.day&&h.type!=='town')||S.huts.find(h=>h.day===seg.day);
-    const hutHtml=hut?`<div class="day-hut"><span class="day-hut-name">${hut.name}</span><span class="status-badge ${hut.status}">${statusLabel(hut.status)}</span></div>`:'';
+    const hutHtml=hut?`<div class="day-hut"><span class="day-hut-name">${esc(hut.name)}</span><span class="status-badge ${hut.status}">${statusLabel(hut.status)}</span></div>`:'';
     const color = seg.day === 0 ? '#888' : SEGMENT_COLORS[(seg.day-1)%SEGMENT_COLORS.length];
-    const dateLabel = seg.date ? `<span style="color:var(--muted);font-size:10px;margin-right:auto">${seg.date}</span>` : '';
+    const dateLabel = seg.date ? `<span style="color:var(--muted);font-size:10px;margin-right:auto">${esc(seg.date)}</span>` : '';
     return`<div class="day-card" onclick="selectDay(${seg.day},this)" id="day-card-${seg.day}" data-day="${seg.day}" style="border-right:3px solid ${color}30">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <div style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0"></div>
         <div class="day-num" style="margin-bottom:0">${seg.day === 0 ? 'הגעה' : `יום ${seg.day}`}</div>
         ${dateLabel}
       </div>
-      <div class="day-route">${seg.from} — ${seg.to}</div>
+      <div class="day-route">${esc(seg.from)} — ${esc(seg.to)}</div>
       <div class="day-stats">
-        ${seg.dist ? `<span>${seg.dist} ק"מ</span>` : ''}
-        ${seg.up ? `<span>+${seg.up}מ'</span>` : ''}
-        <span>${seg.diff}</span>
+        ${seg.dist ? `<span>${esc(String(seg.dist))} ק"מ</span>` : ''}
+        ${seg.up ? `<span>+${esc(String(seg.up))}מ'</span>` : ''}
+        <span>${esc(seg.diff)}</span>
       </div>
       ${hutHtml}
     </div>`;
@@ -2029,14 +2041,14 @@ function renderOverviewPanel(){
   const hutsHtml = sortedHuts.map(h => {
     const color = h.day >= 1 ? SEGMENT_COLORS[(h.day-1) % SEGMENT_COLORS.length] : '#666';
     const statusColor = h.status==='booked' ? 'var(--ok)' : h.status==='pending' ? 'var(--warn)' : 'var(--danger)';
-    const statusLabel = h.status==='booked' ? 'מוזמן' : h.status==='pending' ? 'בתהליך' : 'לא מוזמן';
+    const hutStatusLabel = h.status==='booked' ? 'מוזמן' : h.status==='pending' ? 'בתהליך' : 'לא מוזמן';
     return `<div class="ov-hut-row">
       <div class="ov-hut-day" style="background:${color}">${h.day === 0 ? '★' : h.day}</div>
       <div class="ov-hut-info">
-        <div class="ov-hut-name">${h.name}</div>
-        <div class="ov-hut-meta">${h.date || ''} · ${h.altitude}מ' · ${h.country}</div>
+        <div class="ov-hut-name">${esc(h.name)}</div>
+        <div class="ov-hut-meta">${esc(h.date||'')} · ${esc(String(h.altitude))}מ' · ${esc(h.country)}</div>
       </div>
-      <span style="font-size:10px;color:${statusColor};flex-shrink:0">${statusLabel}</span>
+      <span style="font-size:10px;color:${statusColor};flex-shrink:0">${hutStatusLabel}</span>
     </div>`;
   }).join('');
 
@@ -2047,9 +2059,9 @@ function renderOverviewPanel(){
     const pct  = Math.round(done / totalItems * 100);
     const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
     return `<div class="ov-group-row">
-      <div class="ov-group-avatar" style="background:${color}">${(p.display_name||'?').charAt(0).toUpperCase()}</div>
+      <div class="ov-group-avatar" style="background:${color}">${esc((p.display_name||'?').charAt(0).toUpperCase())}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${p.display_name}</div>
+        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${esc(p.display_name)}</div>
         <div class="member-equip-bar" style="max-width:100%;margin-bottom:0">
           <div class="member-equip-fill" style="width:${pct}%"></div>
         </div>
@@ -2061,10 +2073,10 @@ function renderOverviewPanel(){
   el.innerHTML = `
     <div class="ov-section">
       <div class="ov-title">פרטי הטיול</div>
-      <div style="font-size:20px;font-weight:800;margin-bottom:4px">${trip.name || 'Tour du Mont Blanc'}</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:4px">${startDate} — ${endDate}</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:4px">${esc(trip.name || 'Tour du Mont Blanc')}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px">${esc(startDate)} — ${esc(endDate)}</div>
       ${countdownHtml}
-      ${trip.notes ? `<div style="font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.6;border-right:2px solid var(--border2);padding-right:10px">${trip.notes}</div>` : ''}
+      ${trip.notes ? `<div style="font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.6;border-right:2px solid var(--border2);padding-right:10px">${esc(trip.notes)}</div>` : ''}
     </div>
 
     <div class="ov-section">
@@ -2119,7 +2131,7 @@ function renderMemberProgress(){
     const done  = EQUIPMENT.filter(i => userEquip[i.id]).length;
     const pct   = Math.round(done / total * 100);
     return `<div class="member-progress ${equipViewId === p.id ? 'on' : ''}" onclick="viewEquip('${p.id}')">
-      <div class="mp-name"><span>${p.display_name}</span><span class="mp-pct">${pct}%</span></div>
+      <div class="mp-name"><span>${esc(p.display_name)}</span><span class="mp-pct">${pct}%</span></div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     </div>`;
   }).join('');
@@ -2279,8 +2291,8 @@ function renderOverview(){
   document.getElementById('overview-huts').innerHTML=[...S.huts].sort((a,b)=>a.day-b.day).map(h=>`
     <div class="list-item">
       <div class="li-main">
-        <div class="li-name">${h.name}</div>
-        <div class="li-meta">יום ${h.day} · ${h.altitude}מ' · ${h.country}</div>
+        <div class="li-name">${esc(h.name)}</div>
+        <div class="li-meta">יום ${h.day} · ${esc(String(h.altitude))}מ' · ${esc(h.country)}</div>
       </div>
       <select class="inline-select" onchange="quickUpdateHut('${h.id}','status',this.value)">
         <option value="none" ${h.status==='none'?'selected':''}>לא מוזמן</option>
@@ -2430,6 +2442,7 @@ function quickUpdateHut(id,field,val){
 }
 
 function deleteHut(id){
+  if(!confirm('למחוק בקתה זו? פעולה זו בלתי הפיכה.')) return;
   S.huts=S.huts.filter(h=>h.id!==id);
   saveState(); // async — fire and forget
   renderHutsList();
@@ -2446,10 +2459,10 @@ function renderHutsList(){
   el.innerHTML=sorted.map(h=>`
     <div class="list-item">
       <div class="li-main">
-        <div class="li-name">${h.name}</div>
-        <div class="li-meta">יום ${h.day} · ${h.altitude}מ' · <span class="country-flag">${h.country}</span></div>
-        ${h.notes?`<div class="li-meta" style="margin-top:3px">${h.notes}</div>`:''}
-        ${h.contact?`<div class="li-meta">${h.contact}</div>`:''}
+        <div class="li-name">${esc(h.name)}</div>
+        <div class="li-meta">יום ${h.day} · ${esc(String(h.altitude))}מ' · <span class="country-flag">${esc(h.country)}</span></div>
+        ${h.notes?`<div class="li-meta" style="margin-top:3px">${esc(h.notes)}</div>`:''}
+        ${h.contact?`<div class="li-meta">${esc(h.contact)}</div>`:''}
       </div>
       <select class="inline-select" onchange="quickUpdateHut('${h.id}','status',this.value)">
         <option value="none" ${h.status==='none'?'selected':''}>לא מוזמן</option>
@@ -2695,6 +2708,7 @@ function addSegment(){
 }
 
 function deleteSegment(id){
+  if(!confirm('למחוק מקטע זה? פעולה זו בלתי הפיכה.')) return;
   S.segments=S.segments.filter(s=>s.id!==id);
   saveState();
   renderSegmentsList();
@@ -2711,9 +2725,9 @@ function renderSegmentsList(){
   el.innerHTML=sorted.map(s=>`
     <div class="list-item">
       <div class="li-main">
-        <div class="li-name">יום ${s.day} — ${s.from} → ${s.to}</div>
-        <div class="li-meta">${s.dist} ק"מ · +${s.up}מ' · ${s.diff} · ${s.time}</div>
-        ${s.desc?`<div class="li-meta" style="margin-top:3px">${s.desc}</div>`:''}
+        <div class="li-name">יום ${s.day} — ${esc(s.from)} → ${esc(s.to)}</div>
+        <div class="li-meta">${esc(String(s.dist))} ק"מ · +${esc(String(s.up))}מ' · ${esc(s.diff)} · ${esc(s.time)}</div>
+        ${s.desc?`<div class="li-meta" style="margin-top:3px">${esc(s.desc)}</div>`:''}
       </div>
       <div class="li-actions">
         <button class="btn-sm danger" onclick="deleteSegment('${s.id}')">מחק</button>
@@ -2782,16 +2796,16 @@ function renderMembersList(){
     const joinedDate = p.joined_at ? new Date(p.joined_at).toLocaleDateString('he-IL') : '—';
 
     return `<div class="member-card">
-      <div class="member-avatar" style="background:${avatarColor}">${initial}</div>
+      <div class="member-avatar" style="background:${avatarColor}">${esc(initial)}</div>
       <div class="member-info">
         <div class="member-name">
-          ${p.display_name || '—'}
+          ${esc(p.display_name || '—')}
           ${isMe ? '<span style="font-size:10px;color:var(--muted);font-weight:400">(אתה)</span>' : ''}
           <span class="member-role ${p.role}">${isAdmin ? 'מנהל' : 'מטיל'}</span>
         </div>
-        <div class="member-email">${p.email || '—'}</div>
+        <div class="member-email">${esc(p.email || '—')}</div>
         <div class="member-stats">
-          <span>הצטרף: ${joinedDate}</span>
+          <span>הצטרף: ${esc(joinedDate)}</span>
           <span>ציוד: ${done}/${total} (${pct}%)</span>
         </div>
         <div class="member-equip-bar">
@@ -2973,7 +2987,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
 });
 
 // ── Inactivity logout after 5 minutes ──
-const INACTIVITY_MS = 5 * 60 * 1000; // 5 minutes
+const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
 
 function resetInactivityTimer() {
   if (!sbUser) return; // only track when logged in
