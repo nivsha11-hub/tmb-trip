@@ -6,7 +6,7 @@
 <title>Mont Blanc Trek</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -1211,7 +1211,40 @@ const DEFAULT_USERS = [
 // ── Supabase client ──
 const SUPABASE_URL = 'https://lefqiqhprqfrxjwlmbbx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlZnFpcWhwcnFmcnhqd2xtYmJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NTc0MDAsImV4cCI6MjA5NTUzMzQwMH0.C9-vaLfhqALbLU5KDCc5zGlcLdP8fa5j4M5szAek0Do';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    // Needed so the link in the confirmation email lands back here as a
+    // session. Left on the default implicit flow on purpose: PKCE would
+    // require the code verifier to live in the same browser that signed up,
+    // which breaks when the email is opened on a different device.
+    detectSessionInUrl: true
+  }
+});
+
+// Always resolve a *live* access token. sbAccessToken can go stale after a
+// silent refresh, which is what made saves fail with 401 mid-session.
+async function getFreshToken(){
+  try {
+    const { data, error } = await sb.auth.getSession();
+    if (error) console.warn('getSession:', error.message);
+    const t = data?.session?.access_token || null;
+    if (t) sbAccessToken = t;
+    return t || sbAccessToken;
+  } catch(e){
+    console.warn('getFreshToken:', e);
+    return sbAccessToken;
+  }
+}
+
+function authHeaders(token, extra){
+  return Object.assign({
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/json'
+  }, extra || {});
+}
 
 // HTML-escape user content before inserting into innerHTML
 function esc(s){
@@ -1260,49 +1293,95 @@ function loadStateFromLocal(){
   }
 }
 
-// Load from Supabase (called after login when token is available)
+// Load from Supabase (called after login when token is available).
+// Returns 'loaded' | 'empty' | 'error'
 async function loadStateFromSupabase(){
-  if (!sbAccessToken) return false;
+  const token = await getFreshToken();
+  if (!token) return 'error';
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/trip_data?id=eq.1&select=huts,segments,trip`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sbAccessToken}` }
+      headers: authHeaders(token)
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      const body = await res.text().catch(()=>'');
+      console.warn('loadStateFromSupabase HTTP', res.status, body);
+      return 'error';
+    }
     const rows = await res.json();
     const row = rows?.[0];
-    if (!row) return false;
+    if (!row) return 'empty';
     if (row.huts     && row.huts.length)     S.huts     = row.huts;
     if (row.segments && row.segments.length) S.segments = row.segments;
     if (row.trip     && Object.keys(row.trip).length) S.trip = row.trip;
     // Sync to localStorage as cache
     localStorage.setItem('tmb_v4', JSON.stringify({ huts:S.huts, segments:S.segments, trip:S.trip }));
-    return true;
-  } catch(e) { console.warn('loadStateFromSupabase:', e); return false; }
+    return 'loaded';
+  } catch(e) { console.warn('loadStateFromSupabase:', e); return 'error'; }
 }
 
 function loadState(){ loadStateFromLocal(); } // initial load before auth
 
-async function saveState(){
-  // Always save to localStorage
+// saveState reports failures instead of swallowing them, so "saved" in the UI
+// always means "actually in Postgres".
+function cacheLocal(){
   localStorage.setItem('tmb_v4', JSON.stringify({ huts:S.huts, segments:S.segments, trip:S.trip }));
-  // Save to Supabase if logged in (upsert — works even if row doesn't exist yet)
-  if (!sbAccessToken) return;
+}
+
+// Realtime echoes our own writes back at us. Remembering the exact
+// updated_at we sent lets the subscription tell "someone else changed this"
+// apart from "this is my own write coming home", which otherwise clobbers
+// an edit the user made while the previous save was still in flight.
+let _lastLocalWriteAt = null;
+let _saveInFlight = 0;
+
+async function saveState(opts){
+  const silent = !!(opts && opts.silent);
+  // Always save to localStorage
+  cacheLocal();
+
+  const token = await getFreshToken();
+  if (!token) {
+    if (!silent) toast('לא מחובר — נשמר מקומית בלבד', 'warn');
+    return false;
+  }
+  _saveInFlight++;
+  const stamp = new Date().toISOString();
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/trip_data`, {
+    // on_conflict=id is explicit so the upsert can never degrade into a
+    // duplicate-key INSERT if the table's PK changes.
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/trip_data?on_conflict=id`, {
       method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${sbAccessToken}`,
+      headers: authHeaders(token, {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ id: 1, huts: S.huts, segments: S.segments, trip: S.trip, updated_at: new Date().toISOString() })
+      }),
+      body: JSON.stringify({ id: 1, huts: S.huts, segments: S.segments, trip: S.trip, updated_at: stamp })
     });
     if (!res.ok) {
       const body = await res.json().catch(()=>({}));
-      console.warn('saveState Supabase error:', res.status, body);
+      console.error('saveState Supabase error:', res.status, body);
+      if (!silent) toast(dbErrorMessage(res.status, body, 'שמירת נתוני הטיול'), 'err');
+      return false;
     }
-  } catch(e) { console.warn('saveState to Supabase:', e); }
+    _lastLocalWriteAt = stamp;
+    return true;
+  } catch(e) {
+    console.error('saveState to Supabase:', e);
+    if (!silent) toast('שגיאת רשת — הנתונים נשמרו מקומית בלבד', 'err');
+    return false;
+  } finally {
+    _saveInFlight--;
+  }
+}
+
+// Turn a PostgREST failure into something a human can act on.
+function dbErrorMessage(status, body, what){
+  const code = body?.code || '';
+  if (status === 401) return `${what}: פג תוקף הכניסה — התחבר מחדש`;
+  if (status === 403 || code === '42501') return `${what}: אין הרשאה (RLS) — הרץ את supabase-setup.sql`;
+  if (status === 404 || code === '42P01') return `${what}: הטבלה לא קיימת — הרץ את supabase-setup.sql`;
+  if (status === 409) return `${what}: התנגשות מפתח (${code})`;
+  return `${what}: שגיאה ${status} ${body?.message || ''}`.trim();
 }
 
 function currentUser(){ return sbProfile; }
@@ -1322,7 +1401,9 @@ function toggleAuthMode(){
   document.getElementById('auth-submit').textContent = isSignup ? 'הרשמה' : 'כניסה';
   document.getElementById('auth-toggle-text').textContent = isSignup ? 'כבר יש לך חשבון?' : 'אין לך חשבון?';
   document.querySelector('[onclick="toggleAuthMode()"]').textContent = isSignup ? 'כניסה' : 'הרשמה';
-  document.getElementById('auth-err').textContent = '';
+  const errEl = document.getElementById('auth-err');
+  errEl.textContent = '';
+  errEl.style.color = '';
 }
 
 async function doAuthAction(){
@@ -1338,14 +1419,32 @@ async function doLogin(){
   errEl.textContent = '';
   if (!email || !pass){ errEl.textContent = 'נא למלא אימייל וסיסמה'; return; }
   btn.disabled = true; btn.textContent = 'מתחבר...';
-  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  let error = null;
+  try {
+    ({ error } = await sb.auth.signInWithPassword({ email, password: pass }));
+  } catch(e) {
+    error = { message: 'שגיאת רשת — בדוק חיבור לאינטרנט', code: 'network' };
+    console.error('signInWithPassword threw:', e);
+  }
   btn.disabled = false; btn.textContent = 'כניסה';
   if (error){
-    errEl.textContent = error.message.includes('Invalid login credentials')
-      ? 'אימייל או סיסמה שגויים'
-      : error.message;
+    errEl.textContent = loginErrorMessage(error);
+    return;
   }
   // on success → onAuthStateChange fires → loadProfileAndStart()
+}
+
+function loginErrorMessage(error){
+  const code = error.code || '';
+  const msg  = error.message || '';
+  if (code === 'invalid_credentials' || msg.includes('Invalid login credentials'))
+    return 'אימייל או סיסמה שגויים';
+  if (code === 'email_not_confirmed' || msg.includes('Email not confirmed'))
+    return 'המייל לא אושר — בדוק את תיבת הדואר ולחץ על קישור האישור';
+  if (code === 'over_request_rate_limit' || error.status === 429)
+    return 'יותר מדי ניסיונות — המתן דקה ונסה שוב';
+  if (code === 'user_banned') return 'המשתמש חסום';
+  return msg || 'שגיאה לא ידועה בכניסה';
 }
 
 async function doSignup(){
@@ -1358,25 +1457,55 @@ async function doSignup(){
   if (!email || !pass || !name){ errEl.textContent = 'נא למלא את כל השדות'; return; }
   if (pass.length < 6){ errEl.textContent = 'סיסמה חייבת להיות לפחות 6 תווים'; return; }
   btn.disabled = true; btn.textContent = 'נרשם...';
-  const { error } = await sb.auth.signUp({
-    email, password: pass,
-    options: { data: { display_name: name } }
-  });
+  let data = null, error = null;
+  try {
+    ({ data, error } = await sb.auth.signUp({
+      email, password: pass,
+      options: {
+        data: { display_name: name },
+        emailRedirectTo: location.origin + location.pathname
+      }
+    }));
+  } catch(e) {
+    error = { message: 'שגיאת רשת — בדוק חיבור לאינטרנט' };
+    console.error('signUp threw:', e);
+  }
   btn.disabled = false; btn.textContent = 'הרשמה';
   if (error){ errEl.textContent = error.message; return; }
-  // on success → onAuthStateChange fires
+
+  // Project has "Confirm email" ON → signUp returns a user but NO session.
+  // Without this branch the screen just sat there and looked broken.
+  if (!data?.session){
+    errEl.style.color = 'var(--ok)';
+    errEl.textContent = `נשלח מייל אישור אל ${email}. אשר אותו ואז התחבר.`;
+    authMode = 'login';
+    document.getElementById('auth-name-field').style.display = 'none';
+    document.getElementById('auth-subtitle').textContent = 'Tour du Mont Blanc — כניסה למערכת';
+    document.getElementById('auth-submit').textContent = 'כניסה';
+    document.getElementById('auth-toggle-text').textContent = 'אין לך חשבון?';
+    document.querySelector('[onclick="toggleAuthMode()"]').textContent = 'הרשמה';
+    setTimeout(()=>{ errEl.style.color = ''; }, 12000);
+    return;
+  }
+  // Session returned (email confirmation off) → onAuthStateChange fires
 }
 
 async function doLogout(){
   clearTimeout(inactivityTimer); // stop inactivity timer
+  clearTimeout(_equipSaveDebounce);
   if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
-  await sb.auth.signOut();
-  sbUser = null; sbProfile = null; allProfiles = []; equipProgress = {};
+  try { await sb.auth.signOut(); } catch(e) { console.warn('signOut:', e); }
+  sbUser = null; sbProfile = null; sbAccessToken = null;
+  allProfiles = []; equipProgress = {};
   document.getElementById('app').classList.remove('on');
   document.getElementById('auth').style.display = 'flex';
+  document.getElementById('auth-loading').style.display = 'none';
   document.getElementById('auth-email').value = '';
   document.getElementById('auth-pass').value  = '';
-  document.getElementById('auth-err').textContent = '';
+  const errEl = document.getElementById('auth-err');
+  errEl.textContent = ''; errEl.style.color = '';
+  const btn = document.getElementById('auth-submit');
+  btn.disabled = false; btn.textContent = authMode === 'signup' ? 'הרשמה' : 'כניסה';
 }
 
 // ══════════════════════════════════════════
@@ -1384,45 +1513,76 @@ async function doLogout(){
 // ══════════════════════════════════════════
 
 async function fetchWithToken(path, token){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json'
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: authHeaders(token) });
+    if (!res.ok) {
+      const body = await res.text().catch(()=>'');
+      console.warn('fetchWithToken', path, res.status, body);
+      return null;
     }
-  });
-  if (!res.ok) { console.warn('fetchWithToken', path, res.status); return null; }
-  return res.json();
+    return await res.json();
+  } catch(e) {
+    console.warn('fetchWithToken threw', path, e);
+    return null;
+  }
 }
 
+// A user can exist in auth.users with no row in public.profiles (signed up
+// before the trigger existed, or the trigger failed). Previously that dead-ended
+// the login with "שגיאה בטעינת הפרופיל". Now we create the missing row.
+async function ensureProfile(token){
+  const meta = sbUser.user_metadata || {};
+  const payload = {
+    id: sbUser.id,
+    display_name: meta.display_name || meta.full_name || (sbUser.email || '').split('@')[0] || 'מטייל',
+    email: sbUser.email || null,
+    role: 'member'
+  };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=id`, {
+      method: 'POST',
+      headers: authHeaders(token, {
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=representation'
+      }),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(()=>({}));
+      console.error('ensureProfile failed:', res.status, body);
+      return null;
+    }
+    const rows = await res.json();
+    return rows?.[0] || payload;
+  } catch(e) { console.error('ensureProfile threw:', e); return null; }
+}
+
+let _loadingProfile = false;
+
 async function loadProfileAndStart(){
+  if (_loadingProfile) return;          // guard double auth events
+  _loadingProfile = true;
   document.getElementById('auth-loading').style.display = 'block';
   try {
-    const token = sbAccessToken;
+    const token = await getFreshToken();
+    if (!token) throw new Error('no access token after sign-in');
 
     // Load own profile
-    let profile = null;
-    if (token) {
-      const profiles = await fetchWithToken(`profiles?id=eq.${sbUser.id}&select=id,display_name,role,email,joined_at`, token);
-      profile = profiles?.[0] || null;
-    }
-    if (!profile) {
-      // fallback via supabase client
-      const { data } = await sb.from('profiles').select('id,display_name,role,email,joined_at').eq('id', sbUser.id).single();
-      profile = data;
-    }
+    const profiles = await fetchWithToken(
+      `profiles?id=eq.${encodeURIComponent(sbUser.id)}&select=id,display_name,role,email,joined_at`, token);
+    let profile = profiles?.[0] || null;
+
+    // Self-heal a missing profile row rather than dead-ending the login
+    if (!profile) profile = await ensureProfile(token);
+    if (!profile) throw new Error('profile row missing and could not be created');
     sbProfile = profile;
 
     // Load all profiles
-    const allP = token
-      ? await fetchWithToken('profiles?select=id,display_name,role,email,joined_at', token)
-      : (await sb.from('profiles').select('id,display_name,role,email,joined_at')).data;
-    allProfiles = allP || [];
+    allProfiles = await fetchWithToken('profiles?select=id,display_name,role,email,joined_at', token) || [];
+    if (!allProfiles.some(p => p.id === sbProfile.id)) allProfiles.push(sbProfile);
 
-    // Load all equipment progress via raw fetch (bypasses client auth bug)
-    const progress = token
-      ? await fetchWithToken('equipment_progress?select=*', token)
-      : (await sb.from('equipment_progress').select('*')).data;
+    // Load all equipment progress via raw fetch (explicit token, no client lock)
+    const progress = await fetchWithToken('equipment_progress?select=*', token);
     equipProgress = {};
     (progress || []).forEach(row => {
       if (!equipProgress[row.user_id]) equipProgress[row.user_id] = {};
@@ -1430,7 +1590,15 @@ async function loadProfileAndStart(){
     });
 
     // Load trip data from Supabase (overrides localStorage)
-    await loadStateFromSupabase();
+    const tripState = await loadStateFromSupabase();
+    if (tripState === 'empty' && sbProfile.role === 'admin') {
+      // First ever login: seed row 1 so the DB becomes the source of truth
+      // instead of every device drifting on its own localStorage copy.
+      const ok = await saveState({ silent: true });
+      console.log('seeded trip_data row:', ok);
+    } else if (tripState === 'error') {
+      toast('לא ניתן לטעון נתוני טיול מהשרת — מוצג עותק מקומי', 'warn');
+    }
 
     // Subscribe to realtime updates
     setupRealtime();
@@ -1442,14 +1610,22 @@ async function loadProfileAndStart(){
     document.getElementById('auth-loading').style.display = 'none';
     // Still try to show app if we have a profile
     if (sbProfile) { startApp(); } else {
-      toast('שגיאה בטעינת הפרופיל — נסה לרענן', 'err');
+      const errEl = document.getElementById('auth-err');
+      errEl.style.color = '';
+      errEl.textContent = 'שגיאה בטעינת הפרופיל: ' + (e.message || e);
       document.getElementById('auth').style.display = 'flex';
+      document.getElementById('app').classList.remove('on');
     }
+  } finally {
+    _loadingProfile = false;
   }
 }
 
 function setupRealtime(){
   if (realtimeChannel) { sb.removeChannel(realtimeChannel); }
+  // Realtime authorises against RLS with its own socket token — set it
+  // explicitly so subscriptions don't silently receive nothing.
+  if (sbAccessToken) { try { sb.realtime.setAuth(sbAccessToken); } catch(e) { console.warn('realtime setAuth:', e); } }
   realtimeChannel = sb.channel('tmb-realtime')
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'equipment_progress' },
@@ -1480,7 +1656,31 @@ function setupRealtime(){
         if (isAdmin()) renderMembersList();
       }
     )
-    .subscribe();
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'trip_data' },
+      payload => {
+        // Trip edits made on another device — adopt them unless we are the
+        // one currently typing into an admin form.
+        const row = payload.new;
+        if (!row) return;
+        // Our own write coming back: applying it would overwrite any edit the
+        // user made while that save was still in flight.
+        if (row.updated_at && row.updated_at === _lastLocalWriteAt) return;
+        if (_saveInFlight > 0) return;
+        if (document.activeElement?.matches('input,textarea,select')) return;
+        if (row.huts     && row.huts.length)     S.huts     = row.huts;
+        if (row.segments && row.segments.length) S.segments = row.segments;
+        if (row.trip     && Object.keys(row.trip).length) S.trip = row.trip;
+        localStorage.setItem('tmb_v4', JSON.stringify({ huts:S.huts, segments:S.segments, trip:S.trip }));
+        renderAll();
+        if (map) refreshMapMarkers();
+      }
+    )
+    .subscribe(status => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('realtime channel status:', status);
+      }
+    });
 }
 
 function startApp(){
@@ -2263,8 +2463,7 @@ async function saveEquipProgress(silent = false){
   const uid = sbUser?.id;
   if (!uid) { toast('לא מחובר', 'err'); return; }
 
-  const { data: sessionData } = await sb.auth.getSession();
-  const token = sessionData?.session?.access_token || sbAccessToken;
+  const token = await getFreshToken();
   if (!token) {
     toast('פג תוקף הכניסה — רענן את הדף', 'err');
     return;
@@ -2278,16 +2477,23 @@ async function saveEquipProgress(silent = false){
     updated_at: new Date().toISOString()
   }));
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/equipment_progress`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    },
-    body: JSON.stringify(rows)
-  });
+  let res;
+  try {
+    // equipment_progress has no surrogate id — (user_id,item_id) is the key.
+    // Naming it explicitly is what makes the upsert merge instead of 409.
+    res = await fetch(`${SUPABASE_URL}/rest/v1/equipment_progress?on_conflict=user_id,item_id`, {
+      method: 'POST',
+      headers: authHeaders(token, {
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      }),
+      body: JSON.stringify(rows)
+    });
+  } catch(e) {
+    console.error('saveEquipProgress network error:', e);
+    toast('שגיאת רשת — ההתקדמות לא נשמרה', 'err');
+    return;
+  }
 
   if (res.ok) {
     if (!silent) toast('ההתקדמות נשמרה');
@@ -2302,7 +2508,7 @@ async function saveEquipProgress(silent = false){
   } else {
     const errBody = await res.json().catch(() => ({}));
     console.error('saveEquipProgress error:', res.status, errBody);
-    toast(`שגיאה בשמירה (${res.status}) — נסה שוב`, 'err');
+    toast(dbErrorMessage(res.status, errBody, 'שמירת ציוד'), 'err');
   }
 }
 
@@ -2451,12 +2657,14 @@ async function addHut(){
     lat, lng
   };
   S.huts.push(hut);
-  saveState(); // async — fire and forget
+  if (btn) btn.disabled = true;
+  const ok = await saveState();   // wait for the DB before claiming success
+  if (btn) btn.disabled = false;
   renderHutsList();
   renderOverview();
   renderDaysList();
   refreshMapMarkers();
-  toast(coords ? 'בקתה נוספה עם מיקום מדויק' : 'בקתה נוספה (מיקום ידני נדרש)');
+  if (ok) toast(coords ? 'בקתה נוספה עם מיקום מדויק' : 'בקתה נוספה (מיקום ידני נדרש)');
   _pendingGeo = null;
   if (_previewMarker) { _previewMarker.remove(); _previewMarker = null; }
   if (statusEl) statusEl.textContent = '';
@@ -2465,27 +2673,33 @@ async function addHut(){
   });
 }
 
-function quickUpdateHut(id,field,val){
+async function quickUpdateHut(id,field,val){
   const h=S.huts.find(x=>x.id===id);
   if(!h) return;
+  const prev = h[field];
   h[field]=val;
-  saveState(); // async — fire and forget
+  const ok = await saveState();
+  if (!ok) { h[field] = prev; cacheLocal(); }   // roll back so the UI can't drift from the DB
   renderHutsList();
   renderOverview();
   renderDaysList();
   refreshMapMarkers();
-  toast('עודכן');
+  if (ok) toast('עודכן');
 }
 
-function deleteHut(id){
+async function deleteHut(id){
   if(!confirm('למחוק בקתה זו? פעולה זו בלתי הפיכה.')) return;
-  S.huts=S.huts.filter(h=>h.id!==id);
-  saveState(); // async — fire and forget
+  const idx = S.huts.findIndex(h=>h.id===id);
+  if (idx < 0) return;
+  const removed = S.huts[idx];
+  S.huts.splice(idx,1);
+  const ok = await saveState();
+  if (!ok) { S.huts.splice(idx,0,removed); cacheLocal(); }   // put it back if the DB refused
   renderHutsList();
   renderOverview();
   renderDaysList();
   refreshMapMarkers();
-  toast('נמחק');
+  if (ok) toast('נמחק');
 }
 
 function renderHutsList(){
@@ -2707,7 +2921,7 @@ function renderCustomSegmentLines() {
   });
 }
 
-function addSegment(){
+async function addSegment(){
   const from = document.getElementById('r-from-search').value.trim();
   const to   = document.getElementById('r-to-search').value.trim();
   if(!from||!to){toast('נא לחפש ולבחור נקודת מוצא ויעד','err');return;}
@@ -2728,7 +2942,8 @@ function addSegment(){
     desc:document.getElementById('r-desc').value.trim()
   };
   S.segments.push(seg);
-  saveState();
+  const ok = await saveState();
+  if (!ok) { S.segments.pop(); cacheLocal(); }
   clearSegmentPreviewMarkers();
   _segFromGeo = null; _segToGeo = null;
   const statusEl = document.getElementById('seg-geo-status');
@@ -2737,21 +2952,25 @@ function addSegment(){
   renderDaysList();
   renderOverview();
   renderCustomSegmentLines();
-  toast(hasCoords ? 'מקטע נוסף עם מיקומים על המפה' : 'מקטע נוסף');
+  if (ok) toast(hasCoords ? 'מקטע נוסף עם מיקומים על המפה' : 'מקטע נוסף');
   ['r-from-search','r-to-search','r-dist','r-up','r-down','r-time','r-desc'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
 }
 
-function deleteSegment(id){
+async function deleteSegment(id){
   if(!confirm('למחוק מקטע זה? פעולה זו בלתי הפיכה.')) return;
-  S.segments=S.segments.filter(s=>s.id!==id);
-  saveState();
+  const idx = S.segments.findIndex(s=>s.id===id);
+  if (idx < 0) return;
+  const removed = S.segments[idx];
+  S.segments.splice(idx,1);
+  const ok = await saveState();
+  if (!ok) { S.segments.splice(idx,0,removed); cacheLocal(); }
   renderSegmentsList();
   renderDaysList();
   renderOverview();
   renderCustomSegmentLines();
-  toast('נמחק');
+  if (ok) toast('נמחק');
 }
 
 function renderSegmentsList(){
@@ -2780,8 +2999,19 @@ async function toggleMemberRole(id, newRole){
   const p = allProfiles.find(x => x.id === id);
   if (!p) return;
   if (id === sbUser?.id){ toast('לא ניתן לשנות תפקיד עצמך', 'err'); return; }
-  const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', id);
-  if (error){ toast('שגיאה בעדכון תפקיד', 'err'); return; }
+  const token = await getFreshToken();
+  if (!token){ toast('פג תוקף הכניסה — רענן את הדף', 'err'); return; }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(token, { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+    body: JSON.stringify({ role: newRole })
+  }).catch(e => { console.error('toggleMemberRole:', e); return null; });
+  if (!res || !res.ok){
+    const body = res ? await res.json().catch(()=>({})) : {};
+    console.error('toggleMemberRole failed:', res?.status, body);
+    toast(dbErrorMessage(res?.status || 0, body, 'עדכון תפקיד'), 'err');
+    return;
+  }
   p.role = newRole;
   renderMembersList();
   renderOverview();
@@ -2874,16 +3104,18 @@ function fillTripForm(){
   document.getElementById('t-notes').value=S.trip.notes||'';
 }
 
-function saveTripInfo(){
+async function saveTripInfo(){
+  const prev = {...S.trip};
   S.trip.name=document.getElementById('t-name').value.trim();
   S.trip.group=document.getElementById('t-group').value.trim();
   S.trip.start=document.getElementById('t-start').value;
   S.trip.end=document.getElementById('t-end').value;
   S.trip.notes=document.getElementById('t-notes').value.trim();
-  saveState(); // async — fire and forget
+  const ok = await saveState();
+  if (!ok) { S.trip = prev; cacheLocal(); }
   renderTripMeta();
   renderOverview();
-  toast('פרטי הטיול עודכנו');
+  if (ok) toast('פרטי הטיול עודכנו');
 }
 
 // ══════════════════════════════════════════
@@ -2995,17 +3227,26 @@ loadState();
 // Show loading while checking session
 document.getElementById('auth-loading').style.display = 'block';
 
-// Listen for auth state changes (login / logout / session restore)
-sb.auth.onAuthStateChange(async (event, session) => {
+// Listen for auth state changes (login / logout / session restore).
+// The callback body MUST stay synchronous: supabase-js runs these handlers
+// while holding its internal auth lock, so awaiting another sb.auth.* call
+// from inside deadlocks the client and the login hangs on "טוען...".
+// Everything real is deferred to a macrotask.
+sb.auth.onAuthStateChange((event, session) => {
   // Always store the latest access token
   sbAccessToken = session?.access_token || null;
 
   // TOKEN_REFRESHED fires silently in background — skip reload if already in app
   if (event === 'TOKEN_REFRESHED' && sbUser) { sbUser = session.user; return; }
 
+  // Password recovery / user updates shouldn't re-bootstrap the whole app
+  if (event === 'USER_UPDATED' && sbUser) { sbUser = session.user; return; }
+
   if (session?.user) {
+    // Already booted for this same user → nothing to redo
+    if (sbUser?.id === session.user.id && sbProfile) { sbUser = session.user; return; }
     sbUser = session.user;
-    await loadProfileAndStart();
+    setTimeout(() => { loadProfileAndStart(); }, 0);
   } else {
     sbUser = null; sbProfile = null; sbAccessToken = null;
     document.getElementById('auth-loading').style.display = 'none';
@@ -3014,15 +3255,36 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// Check existing session on page load
-sb.auth.getSession().then(({ data: { session } }) => {
+// Check existing session on page load.
+// INITIAL_SESSION fires from onAuthStateChange, but if it doesn't (or the
+// session is gone) we must un-stick the "טוען..." spinner ourselves.
+sb.auth.getSession().then(({ data: { session }, error }) => {
+  if (error) console.warn('initial getSession:', error.message);
   if (!session) {
     document.getElementById('auth-loading').style.display = 'none';
+    return;
   }
-  // If session exists → onAuthStateChange fires automatically
+  sbAccessToken = session.access_token;
+  if (!sbUser) {
+    sbUser = session.user;
+    loadProfileAndStart();
+  }
+}).catch(e => {
+  console.error('initial getSession threw:', e);
+  document.getElementById('auth-loading').style.display = 'none';
 });
 
-// ── Inactivity logout after 5 minutes ──
+// Hard safety net: never leave the user staring at a spinner.
+setTimeout(() => {
+  const l = document.getElementById('auth-loading');
+  if (l.style.display !== 'none' && !sbProfile) {
+    l.style.display = 'none';
+    const errEl = document.getElementById('auth-err');
+    if (!errEl.textContent) errEl.textContent = 'החיבור לשרת איטי או נכשל — נסה שוב';
+  }
+}, 15000);
+
+// ── Inactivity logout ──
 const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
 
 function resetInactivityTimer() {

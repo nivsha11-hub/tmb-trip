@@ -1,1 +1,15 @@
 .vercel
+
+# Installers and large binaries that live in this folder but are not the project
+*.exe
+*.msi
+*.zip
+
+# Unrelated material kept alongside the app
+*.pdf
+*.jpeg
+*.jpg
+brand-discovery-worksheet.md
+vango_brandbook.html
+test-your-setup/
+.obsidian/
