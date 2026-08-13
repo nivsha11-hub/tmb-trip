@@ -8,94 +8,267 @@
         "role": "primary",
         "displayName": "Summit Brass",
         "canonical": "#c9a84c",
-        "tonalRamp": ["#1f1a0c", "#3d3318", "#5c4d24", "#7a6631", "#99803d", "#b89949", "#c9a84c", "#e8d59b"]
+        "tonalRamp": [
+          "#1f1a0c",
+          "#3d3318",
+          "#5c4d24",
+          "#7a6631",
+          "#99803d",
+          "#b89949",
+          "#c9a84c",
+          "#e8d59b"
+        ]
       },
       "lichen-ok": {
         "role": "secondary",
         "displayName": "Lichen",
         "canonical": "#4a9e6e",
-        "tonalRamp": ["#0d1f15", "#152f20", "#1e4530", "#2b6244", "#387f58", "#4a9e6e", "#6fb98d", "#a8d8bd"]
+        "tonalRamp": [
+          "#0d1f15",
+          "#152f20",
+          "#1e4530",
+          "#2b6244",
+          "#387f58",
+          "#4a9e6e",
+          "#6fb98d",
+          "#a8d8bd"
+        ]
       },
       "ember-warn": {
         "role": "secondary",
         "displayName": "Ember",
         "canonical": "#d4883a",
-        "tonalRamp": ["#241408", "#3d230e", "#5c3415", "#7a451c", "#996022", "#d4883a", "#e0a468", "#f0cca6"]
+        "tonalRamp": [
+          "#241408",
+          "#3d230e",
+          "#5c3415",
+          "#7a451c",
+          "#996022",
+          "#d4883a",
+          "#e0a468",
+          "#f0cca6"
+        ]
       },
       "rockfall-danger": {
         "role": "secondary",
         "displayName": "Rockfall",
         "canonical": "#d95757",
-        "tonalRamp": ["#240d0d", "#3d1616", "#5c2020", "#7a2b2b", "#993838", "#d95757", "#e58484", "#f2bcbc"]
+        "tonalRamp": [
+          "#240d0d",
+          "#3d1616",
+          "#5c2020",
+          "#7a2b2b",
+          "#993838",
+          "#d95757",
+          "#e58484",
+          "#f2bcbc"
+        ]
       },
       "ink-black": {
         "role": "neutral",
         "displayName": "Ink Black",
         "canonical": "#0c0c0c",
-        "tonalRamp": ["#000000", "#0c0c0c", "#161616", "#1e1e1e", "#272727", "#333333", "#4a4745", "#6b6660"]
+        "tonalRamp": [
+          "#000000",
+          "#0c0c0c",
+          "#161616",
+          "#1e1e1e",
+          "#272727",
+          "#333333",
+          "#4a4745",
+          "#6b6660"
+        ]
       },
       "slate-panel": {
         "role": "neutral",
         "displayName": "Slate Panel",
         "canonical": "#161616",
-        "tonalRamp": ["#000000", "#0c0c0c", "#161616", "#1e1e1e", "#272727", "#333333", "#4a4745", "#6b6660"]
+        "tonalRamp": [
+          "#000000",
+          "#0c0c0c",
+          "#161616",
+          "#1e1e1e",
+          "#272727",
+          "#333333",
+          "#4a4745",
+          "#6b6660"
+        ]
       },
       "slate-raised": {
         "role": "neutral",
         "displayName": "Slate Raised",
         "canonical": "#1e1e1e",
-        "tonalRamp": ["#000000", "#0c0c0c", "#161616", "#1e1e1e", "#272727", "#333333", "#4a4745", "#6b6660"]
+        "tonalRamp": [
+          "#000000",
+          "#0c0c0c",
+          "#161616",
+          "#1e1e1e",
+          "#272727",
+          "#333333",
+          "#4a4745",
+          "#6b6660"
+        ]
       },
       "hairline": {
         "role": "neutral",
         "displayName": "Hairline",
         "canonical": "#272727",
-        "tonalRamp": ["#0c0c0c", "#161616", "#1e1e1e", "#272727", "#333333", "#4a4745", "#6b6660", "#e6e3dc"]
+        "tonalRamp": [
+          "#0c0c0c",
+          "#161616",
+          "#1e1e1e",
+          "#272727",
+          "#333333",
+          "#4a4745",
+          "#6b6660",
+          "#e6e3dc"
+        ]
       },
       "bone": {
         "role": "neutral",
         "displayName": "Bone",
         "canonical": "#e6e3dc",
-        "tonalRamp": ["#26241f", "#3d3a33", "#565149", "#6b6660", "#8a847c", "#aaa49b", "#c8c3ba", "#e6e3dc"]
+        "tonalRamp": [
+          "#26241f",
+          "#3d3a33",
+          "#565149",
+          "#6b6660",
+          "#8a847c",
+          "#aaa49b",
+          "#c8c3ba",
+          "#e6e3dc"
+        ]
       },
       "stone-muted": {
         "role": "neutral",
         "displayName": "Stone Muted",
-        "canonical": "#6b6660",
-        "tonalRamp": ["#1a1817", "#2b2926", "#3d3a36", "#4a4745", "#6b6660", "#8a847c", "#b0aaa2", "#d6d1c9"]
+        "canonical": "#8f8a82",
+        "tonalRamp": [
+          "#1a1817",
+          "#2b2926",
+          "#3d3a36",
+          "#4a4745",
+          "#6b6660",
+          "#8f8a82",
+          "#b0aaa2",
+          "#d6d1c9"
+        ]
       },
       "stone-faint": {
         "role": "neutral",
         "displayName": "Stone Faint",
-        "canonical": "#4a4745",
-        "tonalRamp": ["#141312", "#232120", "#33302e", "#4a4745", "#605c58", "#7d7873", "#a39d96", "#cfc9c1"]
+        "canonical": "#827c74",
+        "tonalRamp": [
+          "#141312",
+          "#232120",
+          "#33302e",
+          "#4a4745",
+          "#605c58",
+          "#827c74",
+          "#a39d96",
+          "#cfc9c1"
+        ]
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Admin stat-card figures only. One per tile, brass, 28px/700 — the loudest element on an admin screen." },
-      "data": { "displayName": "Data", "purpose": "Overview stat figures (nights, walking days, km, metres of ascent). 22px/800, colour-coded to meaning." },
-      "headline": { "displayName": "Headline", "purpose": "Checklist owner name (18px/700) and admin section titles (16px/700)." },
-      "title": { "displayName": "Title", "purpose": "The workhorse. Day routes, hut names, member names, list-item names, button labels. 13px/600." },
-      "body": { "displayName": "Body", "purpose": "Hebrew descriptions, notes, equipment item names. 13-14px/400, line-height 1.5. 14px is the document base." },
-      "label": { "displayName": "Engraved Label", "purpose": "Section headings, field labels, day numbers, status pills, role tags, wordmark. 10-11px/600, uppercase where Latin, 0.06-0.12em tracking, Stone Muted. The most characteristic type in the system." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "Admin stat-card figures only. One per tile, brass, 28px/700 — the loudest element on an admin screen."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Overview stat figures (nights, walking days, km, metres of ascent). 22px/800, colour-coded to meaning."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Checklist owner name (18px/700) and admin section titles (16px/700)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "The workhorse. Day routes, hut names, member names, list-item names, button labels. 13px/600."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Hebrew descriptions, notes, equipment item names. 13-14px/400, line-height 1.5. 14px is the document base."
+      },
+      "label": {
+        "displayName": "Engraved Label",
+        "purpose": "Section headings, field labels, day numbers, status pills, role tags, wordmark. 10-11px/600, uppercase where Latin, 0.06-0.12em tracking, Stone Muted. The most characteristic type in the system."
+      }
     },
     "shadows": [
-      { "name": "over-map-float", "value": "0 8px 24px rgba(0,0,0,.6)", "purpose": "Toast and MapLibre popups. Says 'this is above the terrain'." },
-      { "name": "marker-lift", "value": "0 2px 8px rgba(0,0,0,.7)", "purpose": "Day-number bubbles and geocoder preview pins on the satellite map." },
-      { "name": "marker-drop", "value": "drop-shadow(0 2px 6px rgba(0,0,0,.7))", "purpose": "Hut markers — a filter, not a box-shadow, so it follows the marker's composite silhouette including its triangle tip." },
-      { "name": "floating-control", "value": "0 2px 12px rgba(0,0,0,.5)", "purpose": "The mobile hamburger, which sits over live content." },
-      { "name": "scrim", "value": "rgba(0,0,0,.65)", "purpose": "Drawer occlusion layer. Not a shadow — it darkens what is behind, it does not lift what is in front." }
+      {
+        "name": "over-map-float",
+        "value": "0 8px 24px rgba(0,0,0,.6)",
+        "purpose": "Toast and MapLibre popups. Says 'this is above the terrain'."
+      },
+      {
+        "name": "status-ring",
+        "value": "0 0 0 2px var(--ok | --warn | --danger)",
+        "purpose": "A hut marker's booking state. All three states carry a ring; an absent ring would be indistinguishable from one that failed to render."
+      },
+      {
+        "name": "marker-lift",
+        "value": "0 2px 8px rgba(0,0,0,.7)",
+        "purpose": "Day-number bubbles and geocoder preview pins on the satellite map."
+      },
+      {
+        "name": "marker-drop",
+        "value": "drop-shadow(0 2px 6px rgba(0,0,0,.7))",
+        "purpose": "Hut markers — a filter, not a box-shadow, so it follows the marker's composite silhouette including its triangle tip."
+      },
+      {
+        "name": "floating-control",
+        "value": "0 2px 12px rgba(0,0,0,.5)",
+        "purpose": "The mobile hamburger, which sits over live content."
+      },
+      {
+        "name": "scrim",
+        "value": "rgba(0,0,0,.65)",
+        "purpose": "Drawer occlusion layer. Not a shadow — it darkens what is behind, it does not lift what is in front."
+      }
     ],
     "motion": [
-      { "name": "state-fast", "value": "150ms", "purpose": "Default for every colour, border and opacity state change: buttons, chips, nav, rows, inputs, marker hover." },
-      { "name": "surface-slow", "value": "250ms", "purpose": "Drawers, overlays and the toast fade." },
-      { "name": "progress", "value": "300ms", "purpose": "Equipment progress-bar width transitions." },
-      { "name": "ease-drawer", "value": "cubic-bezier(.4,0,.2,1)", "purpose": "The only named easing in the system; drawer slide only. Everything else uses the browser default." },
-      { "name": "map-ease", "value": "600ms / 800ms / 1000ms / 1400ms", "purpose": "MapLibre camera moves: 600ms 3D pitch toggle, 800ms day-segment fly, 1000ms fly-to-hut, 1400ms fitBounds on a geocoded segment. Deliberately slower than UI motion because the terrain has to stay legible during the move." }
+      {
+        "name": "state-fast",
+        "value": "150ms",
+        "purpose": "Default for every colour, border and opacity state change: buttons, chips, nav, rows, inputs, marker hover."
+      },
+      {
+        "name": "surface-slow",
+        "value": "250ms",
+        "purpose": "Drawers, overlays and the toast fade."
+      },
+      {
+        "name": "progress",
+        "value": "300ms",
+        "purpose": "Equipment progress-bar width transitions."
+      },
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(.4,0,.2,1)",
+        "purpose": "The only named easing in the system; drawer slide only. Everything else uses the browser default."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0",
+        "purpose": "Under prefers-reduced-motion, travel is removed: drawer slides, marker scale, progress-bar fills, and MapLibre camera durations (via mDur()). Colour and border transitions survive because they carry state."
+      },
+      {
+        "name": "map-ease",
+        "value": "600ms / 800ms / 1000ms / 1400ms",
+        "purpose": "MapLibre camera moves: 600ms 3D pitch toggle, 800ms day-segment fly, 1000ms fly-to-hut, 1400ms fitBounds on a geocoded segment. Deliberately slower than UI motion because the terrain has to stay legible during the move."
+      }
     ],
     "breakpoints": [
-      { "name": "mobile", "value": "768px" },
-      { "name": "narrow", "value": "480px" }
+      {
+        "name": "mobile",
+        "value": "768px"
+      },
+      {
+        "name": "narrow",
+        "value": "480px"
+      }
     ]
   },
   "components": [
@@ -113,7 +286,7 @@
       "refersTo": "button-ghost",
       "description": "The default action shape. Transparent on a hairline; hover reveals brass without a fill.",
       "html": "<button class=\"ds-btn-ghost\">הוסף מקטע</button>",
-      "css": ".ds-btn-ghost { background: transparent; color: #6b6660; font-size: 12px; letter-spacing: .04em; padding: 7px 14px; border: 1px solid #272727; border-radius: 2px; cursor: pointer; transition: all .15s; } .ds-btn-ghost:hover { border-color: rgba(201,168,76,.3); color: #c9a84c; } .ds-btn-ghost:focus-visible { outline: 2px solid #c9a84c; outline-offset: 2px; }"
+      "css": ".ds-btn-ghost { background: transparent; color: #8f8a82; font-size: 12px; letter-spacing: .04em; padding: 7px 14px; border: 1px solid #272727; border-radius: 2px; cursor: pointer; transition: all .15s; } .ds-btn-ghost:hover { border-color: rgba(201,168,76,.3); color: #c9a84c; } .ds-btn-ghost:focus-visible { outline: 2px solid #c9a84c; outline-offset: 2px; }"
     },
     {
       "name": "Danger Button",
@@ -129,7 +302,7 @@
       "refersTo": "chip-filter",
       "description": "Equipment-category and map-layer toggles. Selected and hover render identically so the control previews its own on-state.",
       "html": "<div style=\"display:flex;gap:6px\"><button class=\"ds-chip\">הכל</button><button class=\"ds-chip ds-chip-on\">שינה</button></div>",
-      "css": ".ds-chip { background: transparent; color: #6b6660; font-size: 12px; padding: 5px 12px; border: 1px solid #272727; border-radius: 2px; cursor: pointer; transition: all .15s; } .ds-chip:hover, .ds-chip-on { border-color: rgba(201,168,76,.3); color: #c9a84c; background: rgba(201,168,76,.12); } .ds-chip:focus-visible { outline: 2px solid #c9a84c; outline-offset: 2px; }"
+      "css": ".ds-chip { background: transparent; color: #8f8a82; font-size: 12px; padding: 5px 12px; border: 1px solid #272727; border-radius: 2px; cursor: pointer; transition: all .15s; } .ds-chip:hover, .ds-chip-on { border-color: rgba(201,168,76,.3); color: #c9a84c; background: rgba(201,168,76,.12); } .ds-chip:focus-visible { outline: 2px solid #c9a84c; outline-offset: 2px; }"
     },
     {
       "name": "Input Field",
@@ -137,7 +310,7 @@
       "refersTo": "input-field",
       "description": "Recessed field with an engraved label above. Focus shifts the border to brass — no glow, no size change.",
       "html": "<div class=\"ds-field\" dir=\"rtl\"><label class=\"ds-field-label\" for=\"ds-in-1\">גובה (מ')</label><input class=\"ds-field-input\" id=\"ds-in-1\" type=\"text\" placeholder=\"2000\"></div>",
-      "css": ".ds-field { direction: rtl; } .ds-field-label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6b6660; margin-bottom: 5px; } .ds-field-input { width: 100%; padding: 8px 11px; background: #0c0c0c; border: 1px solid #272727; color: #e6e3dc; font-size: 13px; border-radius: 2px; outline: none; transition: border-color .15s; } .ds-field-input::placeholder { color: #4a4745; } .ds-field-input:focus { border-color: #c9a84c; }"
+      "css": ".ds-field { direction: rtl; } .ds-field-label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #8f8a82; margin-bottom: 5px; } .ds-field-input { width: 100%; padding: 8px 11px; background: #0c0c0c; border: 1px solid #272727; color: #e6e3dc; font-size: 13px; border-radius: 2px; outline: none; transition: border-color .15s; } .ds-field-input::placeholder { color: #827c74; } .ds-field-input:focus { border-color: #c9a84c; }"
     },
     {
       "name": "Custom Checkbox",
@@ -145,7 +318,7 @@
       "refersTo": "input-field",
       "description": "The equipment checklist's core control. Appearance stripped, fills brass when checked, tick drawn from a rotated bordered pseudo-element.",
       "html": "<label class=\"ds-cb-row\" dir=\"rtl\"><input class=\"ds-cb\" type=\"checkbox\" checked><span class=\"ds-cb-text\">מקלות טיולים</span></label>",
-      "css": ".ds-cb-row { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; direction: rtl; cursor: pointer; } .ds-cb { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; appearance: none; -webkit-appearance: none; background: #0c0c0c; border: 1px solid #333; border-radius: 2px; position: relative; cursor: pointer; transition: all .15s; } .ds-cb:checked { background: #c9a84c; border-color: #c9a84c; } .ds-cb:checked::after { content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 8px; border: 1.5px solid #000; border-top: none; border-left: none; transform: rotate(45deg); } .ds-cb:focus { outline: 2px solid #c9a84c; outline-offset: 2px; } .ds-cb-text { font-size: 13px; color: #e6e3dc; } .ds-cb:checked ~ .ds-cb-text { text-decoration: line-through; color: #6b6660; }"
+      "css": ".ds-cb-row { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; direction: rtl; cursor: pointer; } .ds-cb { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; appearance: none; -webkit-appearance: none; background: #0c0c0c; border: 1px solid #333; border-radius: 2px; position: relative; cursor: pointer; transition: all .15s; } .ds-cb:checked { background: #c9a84c; border-color: #c9a84c; } .ds-cb:checked::after { content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 8px; border: 1.5px solid #000; border-top: none; border-left: none; transform: rotate(45deg); } .ds-cb:focus { outline: 2px solid #c9a84c; outline-offset: 2px; } .ds-cb-text { font-size: 13px; color: #e6e3dc; } .ds-cb:checked ~ .ds-cb-text { text-decoration: line-through; color: #8f8a82; }"
     },
     {
       "name": "Status Badge",
@@ -161,7 +334,7 @@
       "refersTo": "card-list-item",
       "description": "The admin panel's row primitive. Flat, hairline-bordered; the entire hover treatment is a border brightening.",
       "html": "<div class=\"ds-list-item\" dir=\"rtl\"><div class=\"ds-li-main\"><div class=\"ds-li-name\">Rifugio Elisabetta Soldini</div><div class=\"ds-li-meta\">יום 3 · 2197מ' · IT</div></div><span class=\"ds-badge ds-badge-booked\">מוזמן</span></div>",
-      "css": ".ds-list-item { display: flex; align-items: center; gap: 14px; background: #161616; border: 1px solid #272727; border-radius: 2px; padding: 14px 18px; direction: rtl; transition: border-color .15s; } .ds-list-item:hover { border-color: #333; } .ds-li-main { flex: 1; min-width: 0; } .ds-li-name { font-size: 13px; font-weight: 600; color: #e6e3dc; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-li-meta { font-size: 11px; color: #6b6660; } .ds-badge { font-size: 10px; letter-spacing: .06em; padding: 2px 7px; border-radius: 2px; } .ds-badge-booked { background: rgba(74,158,110,.12); color: #4a9e6e; }"
+      "css": ".ds-list-item { display: flex; align-items: center; gap: 14px; background: #161616; border: 1px solid #272727; border-radius: 2px; padding: 14px 18px; direction: rtl; transition: border-color .15s; } .ds-list-item:hover { border-color: #333; } .ds-li-main { flex: 1; min-width: 0; } .ds-li-name { font-size: 13px; font-weight: 600; color: #e6e3dc; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-li-meta { font-size: 11px; color: #8f8a82; } .ds-badge { font-size: 10px; letter-spacing: .06em; padding: 2px 7px; border-radius: 2px; } .ds-badge-booked { background: rgba(74,158,110,.12); color: #4a9e6e; }"
     },
     {
       "name": "Stat Tile",
@@ -169,7 +342,7 @@
       "refersTo": "card-stat",
       "description": "One figure, one engraved label. The figure is colour-coded to its meaning; the tile itself never is.",
       "html": "<div style=\"display:flex;gap:10px\" dir=\"rtl\"><div class=\"ds-stat\"><div class=\"ds-stat-val\">120</div><div class=\"ds-stat-label\">ק\"מ סה\"כ</div></div><div class=\"ds-stat\"><div class=\"ds-stat-val ds-stat-accent\">+8300</div><div class=\"ds-stat-label\">מ' עלייה</div></div></div>",
-      "css": ".ds-stat { background: #1e1e1e; border: 1px solid #272727; border-radius: 2px; padding: 14px 16px; direction: rtl; } .ds-stat-val { font-size: 22px; font-weight: 800; line-height: 1; color: #e6e3dc; margin-bottom: 4px; } .ds-stat-accent { color: #c9a84c; } .ds-stat-label { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6b6660; }"
+      "css": ".ds-stat { background: #1e1e1e; border: 1px solid #272727; border-radius: 2px; padding: 14px 16px; direction: rtl; } .ds-stat-val { font-size: 22px; font-weight: 800; line-height: 1; color: #e6e3dc; margin-bottom: 4px; } .ds-stat-accent { color: #c9a84c; } .ds-stat-label { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8f8a82; }"
     },
     {
       "name": "Side Navigation",
@@ -177,15 +350,15 @@
       "refersTo": "nav-tab",
       "description": "Label-only rows, right-aligned. Active state is a brass edge bar on the leading (right) edge plus the brass wash.",
       "html": "<nav class=\"ds-nav\" dir=\"rtl\"><button class=\"ds-nav-item ds-nav-on\">סקירה כללית</button><button class=\"ds-nav-item\">בקתות ולינה</button><button class=\"ds-nav-item\">מקטעי מסלול</button><button class=\"ds-nav-item\">חברי קבוצה</button></nav>",
-      "css": ".ds-nav { width: 190px; background: #161616; border-left: 1px solid #272727; padding: 8px 0; direction: rtl; } .ds-nav-item { display: block; width: 100%; text-align: right; padding: 9px 18px; font-size: 13px; color: #6b6660; background: none; border: none; border-right: 2px solid transparent; cursor: pointer; transition: all .15s; } .ds-nav-item:hover { color: #e6e3dc; background: rgba(255,255,255,.02); } .ds-nav-on { color: #e6e3dc; background: rgba(201,168,76,.12); border-right-color: #c9a84c; } .ds-nav-item:focus-visible { outline: 2px solid #c9a84c; outline-offset: -2px; }"
+      "css": ".ds-nav { width: 190px; background: #161616; border-left: 1px solid #272727; padding: 8px 0; direction: rtl; } .ds-nav-item { display: block; width: 100%; text-align: right; padding: 9px 18px; font-size: 13px; color: #8f8a82; background: none; border: none; border-right: 2px solid transparent; cursor: pointer; transition: all .15s; } .ds-nav-item:hover { color: #e6e3dc; background: rgba(255,255,255,.02); } .ds-nav-on { color: #e6e3dc; background: rgba(201,168,76,.12); border-right-color: #c9a84c; } .ds-nav-item:focus-visible { outline: 2px solid #c9a84c; outline-offset: -2px; }"
     },
     {
       "name": "Hut Marker",
       "kind": "custom",
       "refersTo": null,
-      "description": "The system's signature mark. Day-coloured circle with a white casing, a CSS triangle tip from currentColor, and a truncated name plate — built to survive aerial imagery.",
+      "description": "The system's signature mark. Day-coloured circle with a white casing, a CSS triangle tip fed by --tip, a status glyph on the name plate, and a status ring — built to survive aerial imagery, greyscale and daylight.",
       "html": "<div style=\"padding:16px;background:#3d4a3a\"><div class=\"ds-hut booked\"><div class=\"ds-hut-circle\">3</div><div class=\"ds-hut-label\">Elisabetta Soldini</div></div></div>",
-      "css": ".ds-hut { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform .15s; filter: drop-shadow(0 2px 6px rgba(0,0,0,.7)); width: max-content; } .ds-hut:hover { transform: scale(1.25); } .ds-hut-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; background: #2a9d8f; border: 3px solid rgba(255,255,255,.9); position: relative; flex-shrink: 0; } .ds-hut.booked .ds-hut-circle { box-shadow: 0 0 0 2px #4caf50; } .ds-hut-circle::after { content: ''; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 8px solid #2a9d8f; } .ds-hut-label { margin-top: 8px; background: rgba(0,0,0,.82); color: #fff; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 3px; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; letter-spacing: .02em; text-align: center; }"
+      "css": ".ds-hut { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform .15s; filter: drop-shadow(0 2px 6px rgba(0,0,0,.7)); width: max-content; } .ds-hut:hover { transform: scale(1.25); } .ds-hut-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #0c0c0c; background: #2a9d8f; border: 3px solid rgba(255,255,255,.9); position: relative; flex-shrink: 0; } .ds-hut.booked .ds-hut-circle { box-shadow: 0 0 0 2px #4caf50; } .ds-hut-circle::after { content: ''; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 8px solid var(--tip, #2a9d8f); } .ds-hut-label { margin-top: 8px; background: rgba(0,0,0,.82); color: #fff; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 3px; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; letter-spacing: .02em; text-align: center; }"
     },
     {
       "name": "Toast",
@@ -209,14 +382,46 @@
       "Colour saturation belongs to the map, not the chrome"
     ],
     "rules": [
-      { "name": "The Colour-Belongs-To-Data Rule", "body": "If a saturated colour on screen is not (a) the brass on the one live control, (b) a booked/pending/unbooked status, or (c) a per-day route identity, it is wrong. Chrome is grey.", "section": "colors" },
-      { "name": "The Two-Register Rule", "body": "A status colour never appears as a bare tint. It appears as full-strength text or stroke on its own 12%-alpha wash, or not at all.", "section": "colors" },
-      { "name": "The Warm-White Rule", "body": "#e6e3dc in the interface; #fff only for marks drawn over the satellite map, where it is a casing colour against terrain.", "section": "colors" },
-      { "name": "The Engraved-Label Rule", "body": "Any label that names a region, field, state or unit is 10-11px, weight 600, uppercase where Latin, tracked 0.1em, in Stone Muted. Never sentence-case, never body weight.", "section": "typography" },
-      { "name": "The Fixed-Scale Rule", "body": "No clamp(), no vw type. Users read this at a consistent DPI on a phone or a laptop; a heading that shrinks inside a 240px sidebar looks broken, not responsive. Mobile raises specific sizes explicitly rather than fluidly.", "section": "typography" },
-      { "name": "The Hebrew-Is-Not-Uppercased Rule", "body": "text-transform: uppercase is a no-op on Hebrew and is applied for the Latin labels and the wordmark. Do not add tracking to Hebrew body copy in imitation of it.", "section": "typography" },
-      { "name": "The Flat-Until-You-Float Rule", "body": "A shadow is permitted only on an element physically above the map canvas or above the app shell. Cards, panels, tiles, list items, forms, drawers and buttons stay flat forever; they separate by tone and hairline. No hover lift, no translateY(-2px), no glow.", "section": "elevation" },
-      { "name": "The Recess Rule", "body": "'Inside' and 'selected' go darker (to Ink Black), not lighter. Elevation in this system points down.", "section": "elevation" }
+      {
+        "name": "The Colour-Belongs-To-Data Rule",
+        "body": "If a saturated colour on screen is not (a) the brass on the one live control, (b) a booked/pending/unbooked status, or (c) a per-day route identity, it is wrong. Chrome is grey.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Register Rule",
+        "body": "A status colour never appears as a bare tint. It appears as full-strength text or stroke on its own 12%-alpha wash, or not at all.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm-White Rule",
+        "body": "#e6e3dc in the interface; #fff only for marks drawn over the satellite map, where it is a casing colour against terrain.",
+        "section": "colors"
+      },
+      {
+        "name": "The Engraved-Label Rule",
+        "body": "Any label that names a region, field, state or unit is 10-11px, weight 600, uppercase where Latin, tracked 0.1em, in Stone Muted. Never sentence-case, never body weight.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed-Scale Rule",
+        "body": "No clamp(), no vw type. Users read this at a consistent DPI on a phone or a laptop; a heading that shrinks inside a 240px sidebar looks broken, not responsive. Mobile raises specific sizes explicitly rather than fluidly.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hebrew-Is-Not-Uppercased Rule",
+        "body": "text-transform: uppercase is a no-op on Hebrew and is applied for the Latin labels and the wordmark. Do not add tracking to Hebrew body copy in imitation of it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-Until-You-Float Rule",
+        "body": "A shadow is permitted only on an element physically above the map canvas or above the app shell. Cards, panels, tiles, list items, forms, drawers and buttons stay flat forever; they separate by tone and hairline. No hover lift, no translateY(-2px), no glow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Recess Rule",
+        "body": "'Inside' and 'selected' go darker (to Ink Black), not lighter. Elevation in this system points down.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do keep chrome monochrome and spend colour on data. Brass = live control; green/amber/red = booking status; the eight bright hues = hiking days.",

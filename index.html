@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mont Blanc Trek</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -16,8 +16,8 @@
   --border:#272727;
   --border2:#333;
   --text:#e6e3dc;
-  --muted:#6b6660;
-  --muted2:#4a4745;
+  --muted:#8f8a82;
+  --muted2:#827c74;
   --accent:#c9a84c;
   --accent-bg:rgba(201,168,76,.12);
   --accent-border:rgba(201,168,76,.3);
@@ -38,7 +38,7 @@ input,select,textarea{font:inherit;color:inherit}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
 /* ─── AUTH ─── */
-#auth{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:40px}
+#auth{display:flex;align-items:center;justify-content:center;height:100dvh;flex-direction:column;gap:40px}
 #auth-box{width:360px;background:var(--surface);border:1px solid var(--border);padding:40px}
 .auth-title{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
 .auth-sub{font-size:12px;color:var(--muted);margin-bottom:28px}
@@ -59,7 +59,7 @@ input,select,textarea{font:inherit;color:inherit}
 .quick-btn:hover .role{color:var(--accent)}
 
 /* ─── APP SHELL ─── */
-#app{display:none;height:100vh;flex-direction:column}
+#app{display:none;height:100dvh;flex-direction:column}
 #app.on{display:flex}
 .topbar{height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:20px;flex-shrink:0;z-index:30}
 .logo{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
@@ -81,7 +81,7 @@ input,select,textarea{font:inherit;color:inherit}
 /* ─── MAP PANEL ─── */
 #map-panel{position:relative}
 #map{flex:1;height:100%}
-.map-sidebar{width:300px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.map-sidebar{width:300px;background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
 .sidebar-head{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
 .sidebar-head h2{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 .trip-meta{display:flex;flex-direction:column;gap:3px}
@@ -91,7 +91,10 @@ input,select,textarea{font:inherit;color:inherit}
 .sidebar-body{flex:1;overflow-y:auto}
 .day-card{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative}
 .day-card:hover{background:rgba(255,255,255,.02)}
-.day-card.on{background:var(--accent-bg);border-left:2px solid var(--accent)}
+/* The day colour already owns this card's leading edge (set inline in
+   renderDaysList), so the selected state is carried by the wash alone rather
+   than adding a second stripe on the opposite edge. */
+.day-card.on{background:var(--accent-bg)}
 .day-num{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
 .day-route{font-size:13px;font-weight:600;margin-bottom:5px;line-height:1.3}
 .day-stats{display:flex;gap:14px;font-size:11px;color:var(--muted)}
@@ -117,7 +120,7 @@ input,select,textarea{font:inherit;color:inherit}
 .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:2px solid}
 .legend-dot.booked{border-color:var(--ok);background:var(--ok-bg)}
 .legend-dot.pending{border-color:var(--warn);background:var(--warn-bg)}
-.legend-dot.none{border-color:var(--muted);background:transparent}
+.legend-dot.none{border-color:var(--danger);background:transparent}
 .legend-line{width:20px;height:2px;background:var(--accent);flex-shrink:0}
 
 /* MAP POPUP */
@@ -131,14 +134,20 @@ input,select,textarea{font:inherit;color:inherit}
 .hut-marker-el{display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
 .hut-marker-el:hover{transform:scale(1.25)}
 .hut-marker-circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;border:3px solid rgba(255,255,255,.9);position:relative;flex-shrink:0}
-.hut-marker-circle::after{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid currentColor}
+/* --tip carries the day colour so the pointer can be day-coloured while the
+   digit inside keeps its own readable colour (see fgFor()). */
+.hut-marker-circle::after{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid var(--tip,currentColor)}
 .hut-marker-label{margin-top:8px;background:rgba(0,0,0,.82);color:#fff;font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em;text-align:center}
-.hut-marker-el.booked .hut-marker-circle{box-shadow:0 0 0 2px #4caf50}
-.hut-marker-el.pending .hut-marker-circle{box-shadow:0 0 0 2px #ff9800}
+.hut-marker-el.booked .hut-marker-circle{box-shadow:0 0 0 2px var(--ok)}
+.hut-marker-el.pending .hut-marker-circle{box-shadow:0 0 0 2px var(--warn)}
+/* "not booked" was previously signalled by the ABSENCE of a ring, which made it
+   indistinguishable from a ring that failed to render. */
+.hut-marker-el.none .hut-marker-circle{box-shadow:0 0 0 2px var(--danger)}
+.hut-marker-status{font-weight:700;margin-inline-end:3px}
 
 /* ─── INFO PANEL (סקירה + ציוד) ─── */
 #equip-panel{flex-direction:row}
-.equip-sidebar{width:240px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.equip-sidebar{width:240px;background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
 .info-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .info-tab{flex:1;padding:12px 6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;border-radius:0;background:none;border-left:none;border-right:none;border-top:none}
 .info-tab:hover{color:var(--text)}
@@ -151,8 +160,8 @@ input,select,textarea{font:inherit;color:inherit}
 .member-progress.on{background:var(--accent-bg)}
 .mp-name{font-size:13px;font-weight:500;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
 .mp-pct{font-size:11px;color:var(--accent)}
-.progress-bar{height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.progress-bar{height:3px;background:var(--border2);border-radius:var(--radius);overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:var(--radius);transition:width .3s}
 .equip-main{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .equip-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;padding:24px 32px 0}
 .equip-header h1{font-size:18px;font-weight:700}
@@ -193,14 +202,14 @@ input,select,textarea{font:inherit;color:inherit}
 .equip-name{font-size:13px;transition:color .15s}
 .equip-name.done{text-decoration:line-through;color:var(--muted)}
 .equip-note{font-size:11px;color:var(--muted);margin-top:1px}
-.own-only{font-size:11px;color:var(--muted2);padding:3px 8px;background:var(--surface2);border-radius:var(--radius)}
+.own-only{font-size:11px;color:var(--muted);padding:3px 8px;background:var(--surface2);border-radius:var(--radius)}
 
 /* ─── ADMIN PANEL ─── */
 #admin-panel{flex-direction:row}
-.admin-nav{width:190px;background:var(--surface);border-left:1px solid var(--border);padding:8px 0;flex-shrink:0}
-.admin-nav-item{display:block;width:100%;text-align:right;padding:9px 18px;font-size:13px;color:var(--muted);transition:all .15s;border-radius:0;border-left:2px solid transparent}
+.admin-nav{width:190px;background:var(--surface);border-inline-end:1px solid var(--border);padding:8px 0;flex-shrink:0}
+.admin-nav-item{display:block;width:100%;text-align:right;padding:9px 18px;font-size:13px;color:var(--muted);transition:all .15s;border-radius:0;border-inline-start:2px solid transparent}
 .admin-nav-item:hover{color:var(--text);background:rgba(255,255,255,.02)}
-.admin-nav-item.on{color:var(--text);background:var(--accent-bg);border-left-color:var(--accent)}
+.admin-nav-item.on{color:var(--text);background:var(--accent-bg);border-inline-start-color:var(--accent)}
 .admin-body{flex:1;overflow-y:auto;padding:28px 32px}
 .admin-section{display:none}
 .admin-section.on{display:block}
@@ -280,18 +289,21 @@ input,select,textarea{font:inherit;color:inherit}
 /* ─── ADMIN MOBILE BAR + SUB-DRAWER ─── */
 .admin-mobile-bar{display:none;align-items:center;justify-content:space-between;padding:0 16px;height:48px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
 .admin-mobile-bar span{font-size:14px;font-weight:600;color:var(--text)}
-.admin-mobile-hamburger{display:flex;width:40px;height:40px;align-items:center;justify-content:center;flex-direction:column;gap:4px;border-radius:4px;transition:background .15s}
+.admin-mobile-hamburger{display:flex;width:44px;height:44px;align-items:center;justify-content:center;flex-direction:column;gap:4px;border-radius:8px;transition:background .15s}
 .admin-mobile-hamburger:hover{background:rgba(255,255,255,.06)}
 .admin-mobile-hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px}
 .admin-sub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:199;opacity:0;visibility:hidden;transition:all .25s}
 .admin-sub-overlay.open{opacity:1;visibility:visible}
+/* Slides from the right, same as .mobile-drawer: in RTL the right edge is the
+   leading edge, and two drawers arriving from opposite sides read as two
+   different gestures. */
 .admin-sub-drawer{
-  position:fixed;top:0;left:-280px;width:260px;height:100vh;
-  background:var(--surface);border-right:1px solid var(--border);
-  z-index:200;transition:left .25s cubic-bezier(.4,0,.2,1);
+  position:fixed;top:0;right:-280px;width:260px;height:100dvh;
+  background:var(--surface);border-inline-end:1px solid var(--border);
+  z-index:200;transition:right .25s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;
 }
-.admin-sub-drawer.open{left:0}
+.admin-sub-drawer.open{right:0}
 .admin-sub-header{
   padding:18px 16px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
@@ -301,11 +313,12 @@ input,select,textarea{font:inherit;color:inherit}
 .admin-sub-btn{
   display:block;width:100%;padding:14px 20px;
   font-size:15px;font-weight:500;color:var(--muted);
-  border-left:3px solid transparent;transition:all .15s;
+  /* impeccable-disable-next-line side-tab -- transparent placeholder reserving space; the accent only lands via border-inline-start-color on .on */
+  border-inline-start:3px solid transparent;transition:all .15s;
   text-align:right;
 }
 .admin-sub-btn:hover{color:var(--text);background:rgba(255,255,255,.03)}
-.admin-sub-btn.on{color:var(--text);background:var(--accent-bg);border-left-color:var(--accent)}
+.admin-sub-btn.on{color:var(--text);background:var(--accent-bg);border-inline-start-color:var(--accent)}
 
 /* ─── HAMBURGER BUTTON ─── */
 .hamburger{display:none;width:44px;height:44px;align-items:center;justify-content:center;flex-direction:column;gap:5px;flex-shrink:0;cursor:pointer}
@@ -316,8 +329,8 @@ input,select,textarea{font:inherit;color:inherit}
 
 /* ─── MOBILE DRAWER ─── */
 .mobile-drawer{
-  position:fixed;top:0;right:-300px;width:280px;height:100vh;
-  background:var(--surface);border-left:1px solid var(--border);
+  position:fixed;top:0;right:-300px;width:280px;height:100dvh;
+  background:var(--surface);border-inline-end:1px solid var(--border);
   z-index:200;transition:right .25s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;
 }
@@ -336,11 +349,12 @@ input,select,textarea{font:inherit;color:inherit}
 .mobile-nav-btn{
   display:flex;align-items:center;width:100%;padding:14px 20px;
   font-size:15px;font-weight:500;color:var(--muted);
-  border-right:3px solid transparent;transition:all .15s;
+  /* impeccable-disable-next-line side-tab -- transparent placeholder reserving space; the accent only lands via border-inline-start-color on .on */
+  border-inline-start:3px solid transparent;transition:all .15s;
   text-align:right;gap:12px;
 }
 .mobile-nav-btn:hover{color:var(--text);background:rgba(255,255,255,.03)}
-.mobile-nav-btn.on{color:var(--text);background:var(--accent-bg);border-right-color:var(--accent)}
+.mobile-nav-btn.on{color:var(--text);background:var(--accent-bg);border-inline-start-color:var(--accent)}
 .mobile-drawer-footer{padding:16px 20px;border-top:1px solid var(--border)}
 .mobile-logout-btn{
   width:100%;padding:12px;font-size:14px;font-weight:500;
@@ -358,8 +372,8 @@ input,select,textarea{font:inherit;color:inherit}
 @media(max-width:768px){
   /* Topbar — hidden on mobile, hamburger floats */
   .topbar{display:none}
-  #app{height:100vh}
-  .content{height:100vh;max-width:100vw;overflow:hidden}
+  #app{height:100dvh}
+  .content{height:100dvh;max-width:100vw;overflow:hidden}
   .hamburger{
     display:flex;
     position:fixed;top:12px;right:12px;z-index:150;
@@ -370,28 +384,37 @@ input,select,textarea{font:inherit;color:inherit}
   /* Map panel */
   #map-panel{flex-direction:column}
   .map-sidebar{
-    width:100%;height:210px;border-left:none;border-top:1px solid var(--border);
+    width:100%;height:210px;border-inline-end:none;border-top:1px solid var(--border);
     flex-direction:row;overflow-x:auto;overflow-y:hidden;
     -webkit-overflow-scrolling:touch;scrollbar-width:none;
   }
   .map-sidebar::-webkit-scrollbar{display:none}
-  .sidebar-head{width:120px;flex-shrink:0;border-bottom:none;border-left:1px solid var(--border);padding:12px}
+  /* padding-top clears the floating hamburger, which is fixed at the top-right
+     — the leading corner in RTL — and would otherwise sit on this heading. */
+  .sidebar-head{width:120px;flex-shrink:0;border-bottom:none;border-inline-end:1px solid var(--border);padding:52px 12px 12px}
   .sidebar-head h2{font-size:10px;letter-spacing:.08em;line-height:1.4}
   .trip-meta{display:none}
   .sidebar-body{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .sidebar-body::-webkit-scrollbar{display:none}
-  .day-card{min-width:170px;border-bottom:none;border-left:1px solid var(--border);flex-shrink:0;padding:12px}
-  .day-hut{display:none}
+  .day-card{min-width:170px;border-bottom:none;border-inline-end:1px solid var(--border);flex-shrink:0;padding:12px}
+  /* The hut and its booking status are the two facts this app exists to deliver
+     on the trail; km and ascent are desk information. Hide those instead. */
+  .day-stats{display:none}
   .day-route{font-size:12px}
   .map-overlay{top:8px;left:8px;gap:6px}
-  .map-ctrl{padding:7px 14px;font-size:12px}
-  .map-legend{display:none}
+  .map-ctrl{padding:12px 16px;font-size:13px}
+  /* Route lines stay colour-coded per day on mobile, so the day-to-colour key
+     has to stay too — compacted to just the swatches. */
+  .map-legend{bottom:8px;left:8px;padding:6px 9px;max-width:calc(100vw - 16px)}
+  .legend-title,.legend-status{display:none}
+  #legend-days{display:flex;flex-wrap:wrap;gap:0 10px}
 
   /* Info / Equipment panel */
   #equip-panel{flex-direction:column}
-  .equip-sidebar{width:100%;height:auto;border-left:none;border-bottom:1px solid var(--border);flex-shrink:0}
+  .equip-sidebar{width:100%;height:auto;border-inline-end:none;border-bottom:1px solid var(--border);flex-shrink:0}
   #sidebar-overview-section,#sidebar-equip-section{display:none!important}
-  .info-tabs{position:sticky;top:0;z-index:5;background:var(--surface)}
+  /* Reserve the leading 56px for the floating hamburger. */
+  .info-tabs{position:sticky;top:0;z-index:5;background:var(--surface);padding-inline-start:56px}
   .info-tab{padding:16px 8px;font-size:14px;font-weight:600;letter-spacing:.04em}
   .equip-main{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
 
@@ -420,7 +443,7 @@ input,select,textarea{font:inherit;color:inherit}
     scrollbar-width:none;flex-shrink:0;
   }
   .filter-bar::-webkit-scrollbar{display:none}
-  .filter-btn{flex-shrink:0;padding:8px 18px;font-size:13px}
+  .filter-btn{flex-shrink:0;padding:12px 18px;font-size:13px}
 
   #equip-list{padding:0 16px 32px;flex:1;overflow-y:auto}
   .equip-cat-title{font-size:12px;padding-bottom:10px;margin-bottom:12px}
@@ -437,7 +460,7 @@ input,select,textarea{font:inherit;color:inherit}
   /* Admin panel */
   #admin-panel{flex-direction:column}
   .admin-nav{display:none}
-  .admin-mobile-bar{display:flex}
+  .admin-mobile-bar{display:flex;padding-inline-start:56px}
   .admin-body{overflow-y:auto;padding:20px 16px}
   .admin-section{padding:0;margin-bottom:24px}
   .admin-section h2{font-size:16px;margin-bottom:18px}
@@ -453,14 +476,34 @@ input,select,textarea{font:inherit;color:inherit}
   .member-card{padding:16px}
   .add-form{padding:18px}
   .add-form h3{font-size:14px;margin-bottom:14px}
-  .btn-sm{padding:9px 18px;font-size:13px}
+  .btn-sm{padding:12px 18px;font-size:13px}
+
+  /* Touch targets — every interactive control at least 44px tall.
+     16px on the inline select also stops iOS zooming on focus. */
+  .role-btn{padding:12px 16px;font-size:13px}
+  .inline-select{padding:11px 10px;font-size:16px}
+  .btn-primary{padding:13px}
+  .loc-result{padding:13px 14px}
+  .mobile-drawer-close{width:44px;height:44px}
 
   /* Map controls */
-  .maplibregl-ctrl-group button{width:40px!important;height:40px!important}
+  .maplibregl-ctrl-group button{width:44px!important;height:44px!important}
 
   /* Safe area for notched phones */
   #equip-list{padding-bottom:max(32px, env(safe-area-inset-bottom))}
   .admin-body{padding-bottom:max(20px, env(safe-area-inset-bottom))}
+  .mobile-drawer-footer{padding-bottom:max(16px, env(safe-area-inset-bottom))}
+}
+
+/* ─── REDUCED MOTION ───
+   Targeted, not a global kill: colour and border transitions carry state
+   (selected day, booking status, focus) and must survive. What goes is
+   travel — drawers sliding, markers scaling, bars filling. */
+@media (prefers-reduced-motion: reduce){
+  .mobile-drawer,.admin-sub-drawer,.mobile-overlay,.admin-sub-overlay{transition:none}
+  .hamburger span,.hut-marker-el,#toast{transition:none}
+  .progress-fill,.member-equip-fill{transition:none}
+  .hut-marker-el:hover{transform:none}
 }
 
 @media(max-width:480px){
@@ -494,7 +537,7 @@ input,select,textarea{font:inherit;color:inherit}
     <button class="btn-primary" id="auth-submit" onclick="doAuthAction()">כניסה</button>
     <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">
       <span id="auth-toggle-text">אין לך חשבון?</span>
-      <button style="color:var(--accent);font-size:12px;padding:0 4px;text-decoration:underline;background:none;border:none;cursor:pointer" onclick="toggleAuthMode()">הרשמה</button>
+      <button style="color:var(--accent);font-size:12px;min-height:44px;padding:0 10px;text-decoration:underline;background:none;border:none;cursor:pointer" onclick="toggleAuthMode()">הרשמה</button>
     </div>
     <div id="auth-loading" style="display:none;text-align:center;padding-top:12px;font-size:12px;color:var(--muted)">טוען...</div>
   </div>
@@ -561,9 +604,9 @@ input,select,textarea{font:inherit;color:inherit}
           <button class="map-ctrl on" id="ctrl-huts" onclick="toggleHuts()">בקתות</button>
         </div>
         <div class="map-legend" id="map-legend">
-          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">מסלול לפי ימים</div>
+          <div class="legend-title" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">מסלול לפי ימים</div>
           <div id="legend-days"></div>
-          <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+          <div class="legend-status" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
             <div class="legend-row"><div class="legend-dot booked"></div><span>מוזמן</span></div>
             <div class="legend-row"><div class="legend-dot pending"></div><span>בתהליך</span></div>
             <div class="legend-row"><div class="legend-dot none"></div><span>לא מוזמן</span></div>
@@ -1191,6 +1234,32 @@ const SEGMENT_COLORS = [
   '#e76f51','#f4a261','#e9c46a','#2a9d8f',
   '#457b9d','#9b5de5','#f15bb5','#00bbf9'
 ];
+
+// Pick the readable text colour for a coloured fill.
+// The day palette has to stay bright to stay distinguishable over satellite
+// imagery, so we cannot darken it to make white text pass. Flipping the text
+// instead gets every fill above 4.5:1: white on #e9c46a is 1.67, near-black on
+// it is 11.71. Threshold is the sRGB luminance where the two ratios cross.
+function fgFor(bg){
+  const h = String(bg).replace('#','');
+  const full = h.length === 3 ? h.split('').map(c=>c+c).join('') : h;
+  const ch = [0,2,4].map(i => {
+    const v = parseInt(full.substr(i,2),16) / 255;
+    return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+  });
+  const lum = 0.2126*ch[0] + 0.7152*ch[1] + 0.0722*ch[2];
+  // 0.1867 is where the two ratios cross for #fff vs #0c0c0c, so this always
+  // picks the better of the two. A fill sitting exactly on the crossing tops
+  // out at 4.44:1 either way; every colour in this palette clears 4.59.
+  return lum > 0.1867 ? '#0c0c0c' : '#ffffff';
+}
+
+// CSS handles reduced motion for transitions; MapLibre camera moves are driven
+// from JS, so they need the same respect. Read live rather than cached — the OS
+// setting can change while the page is open.
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+function mDur(ms){ return REDUCED_MOTION.matches ? 0 : ms; }
+function mScale(el, factor){ el.style.transform = REDUCED_MOTION.matches ? 'none' : `scale(${factor})`; }
 
 const DEFAULT_TRIP = {
   name:'Tour du Mont Blanc 2025',
@@ -1877,8 +1946,8 @@ function addPassMarkers(){
       cursor:pointer;transition:transform .15s;flex-shrink:0;
     `;
     el.title = `${p.name.replace('\n',' ')} (${p.alt})`;
-    el.addEventListener('mouseenter',()=>el.style.transform='scale(1.4)');
-    el.addEventListener('mouseleave',()=>el.style.transform='scale(1)');
+    el.addEventListener('mouseenter',()=>mScale(el,1.4));
+    el.addEventListener('mouseleave',()=>mScale(el,1));
 
     const popup = new maplibregl.Popup({offset:10,closeButton:false,maxWidth:'200px'})
       .setHTML(`
@@ -1920,7 +1989,7 @@ function addDayMidpointMarkers(){
     const el = document.createElement('div');
     el.style.cssText = `
       background:${color};
-      color:#fff;
+      color:${fgFor(color)};
       font-weight:800;
       font-size:13px;
       width:28px;height:28px;
@@ -1934,8 +2003,8 @@ function addDayMidpointMarkers(){
     `;
     el.textContent = day;
     el.title = `יום ${day}: ${DAY_NAMES[day] || ''}`;
-    el.addEventListener('mouseenter', () => el.style.transform = 'scale(1.3)');
-    el.addEventListener('mouseleave', () => el.style.transform = 'scale(1)');
+    el.addEventListener('mouseenter', () => mScale(el,1.3));
+    el.addEventListener('mouseleave', () => mScale(el,1));
     el.addEventListener('click', e => {
       e.stopPropagation();
       const card = document.querySelector(`.day-card[data-day="${day}"]`);
@@ -1987,8 +2056,8 @@ function refreshMapMarkers(){
     const dayLabel = hut.day === 0 ? '★' : hut.day;
 
     el.innerHTML = `
-      <div class="hut-marker-circle" style="background:${dayColor};color:${dayColor}">${dayLabel}</div>
-      <div class="hut-marker-label">${shortName}</div>
+      <div class="hut-marker-circle" style="background:${dayColor};color:${fgFor(dayColor)};--tip:${dayColor}">${dayLabel}</div>
+      <div class="hut-marker-label"><span class="hut-marker-status" style="color:${statusColorOf(hut.status)}">${statusGlyph(hut.status)}</span>${esc(shortName)}</div>
     `;
 
     const hutSafeUrl = safeUrl(hut.website);
@@ -2037,7 +2106,7 @@ function toggle3D(){
   is3D = !is3D;
   document.getElementById('ctrl-3d').classList.toggle('on', is3D);
   if (!map) return;
-  map.easeTo({ pitch: is3D ? 55 : 0, duration: 600 });
+  map.easeTo({ pitch: is3D ? 55 : 0, duration: mDur(600) });
   if (mapLoaded) map.setTerrain(is3D ? { source:'terrain-dem', exaggeration:1.5 } : null);
 }
 
@@ -2063,11 +2132,20 @@ function toggleHuts(){
 
 function flyToHut(hut){
   if (!map || !hut.lat || !hut.lng) return;
-  map.flyTo({ center:[hut.lng, hut.lat], zoom:13, pitch:55, duration:1000 });
+  map.flyTo({ center:[hut.lng, hut.lat], zoom:13, pitch:55, duration:mDur(1000) });
 }
 
 function statusLabel(s){
   return s==='booked'?'מוזמן':s==='pending'?'בתהליך':'לא מוזמן';
+}
+// Booking status has to survive greyscale and alpine daylight, so it is carried
+// by a glyph as well as a colour — on the map marker "not booked" used to be
+// signalled only by a missing ring.
+function statusGlyph(s){
+  return s==='booked'?'✓':s==='pending'?'⋯':'!';
+}
+function statusColorOf(s){
+  return s==='booked'?'var(--ok)':s==='pending'?'var(--warn)':'var(--danger)';
 }
 
 // ══════════════════════════════════════════
@@ -2114,7 +2192,7 @@ function renderDaysList(){
     const hutHtml=hut?`<div class="day-hut"><span class="day-hut-name">${esc(hut.name)}</span><span class="status-badge ${hut.status}">${statusLabel(hut.status)}</span></div>`:'';
     const color = seg.day === 0 ? '#888' : SEGMENT_COLORS[(seg.day-1)%SEGMENT_COLORS.length];
     const dateLabel = seg.date ? `<span style="color:var(--muted);font-size:10px;margin-right:auto">${esc(seg.date)}</span>` : '';
-    return`<div class="day-card" onclick="selectDay(${seg.day},this)" id="day-card-${seg.day}" data-day="${seg.day}" style="border-right:3px solid ${color}30">
+    return`<div class="day-card" onclick="selectDay(${seg.day},this)" id="day-card-${seg.day}" data-day="${seg.day}" style="border-inline-start:3px solid ${color}30">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <div style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0"></div>
         <div class="day-num" style="margin-bottom:0">${seg.day === 0 ? 'הגעה' : `יום ${seg.day}`}</div>
@@ -2143,7 +2221,7 @@ function selectDay(day, el){
     // fly to midpoint of day segment
     const coords = TMB_DAYS[day];
     const mid = coords[Math.floor(coords.length/2)];
-    if (map) map.flyTo({ center:mid, zoom:12, pitch:55, duration:800 });
+    if (map) map.flyTo({ center:mid, zoom:12, pitch:55, duration:mDur(800) });
   }
 
   // Visually dim all route layers, highlight selected day
@@ -2287,7 +2365,7 @@ function renderOverviewPanel(){
     const statusColor = h.status==='booked' ? 'var(--ok)' : h.status==='pending' ? 'var(--warn)' : 'var(--danger)';
     const hutStatusLabel = h.status==='booked' ? 'מוזמן' : h.status==='pending' ? 'בתהליך' : 'לא מוזמן';
     return `<div class="ov-hut-row">
-      <div class="ov-hut-day" style="background:${color}">${h.day === 0 ? '★' : h.day}</div>
+      <div class="ov-hut-day" style="background:${color};color:${fgFor(color)}">${h.day === 0 ? '★' : h.day}</div>
       <div class="ov-hut-info">
         <div class="ov-hut-name">${esc(h.name)}</div>
         <div class="ov-hut-meta">${esc(h.date||'')} · ${esc(String(h.altitude))}מ' · ${esc(h.country)}</div>
@@ -2303,7 +2381,7 @@ function renderOverviewPanel(){
     const pct  = Math.round(done / totalItems * 100);
     const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
     return `<div class="ov-group-row">
-      <div class="ov-group-avatar" style="background:${color}">${esc((p.display_name||'?').charAt(0).toUpperCase())}</div>
+      <div class="ov-group-avatar" style="background:${color};color:${fgFor(color)}">${esc((p.display_name||'?').charAt(0).toUpperCase())}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:500;margin-bottom:3px">${esc(p.display_name)}</div>
         <div class="member-equip-bar" style="max-width:100%;margin-bottom:0">
@@ -2320,7 +2398,7 @@ function renderOverviewPanel(){
       <div style="font-size:20px;font-weight:800;margin-bottom:4px">${esc(trip.name || 'Tour du Mont Blanc')}</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:4px">${esc(startDate)} — ${esc(endDate)}</div>
       ${countdownHtml}
-      ${trip.notes ? `<div style="font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.6;border-right:2px solid var(--border2);padding-right:10px">${esc(trip.notes)}</div>` : ''}
+      ${trip.notes ? `<div style="font-size:12px;color:var(--text);margin-top:10px;line-height:1.6;border-inline-start:2px solid var(--border2);padding-inline-start:10px">${esc(trip.notes)}</div>` : ''}
     </div>
 
     <div class="ov-section">
@@ -2624,7 +2702,7 @@ function selectLocation(e, lat, lng, name, sub) {
     const el = document.createElement('div');
     el.style.cssText = 'width:14px;height:14px;background:#c9a84c;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.6)';
     _previewMarker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
-    map.flyTo({ center: [lng, lat], zoom: 14, duration: 1200 });
+    map.flyTo({ center: [lng, lat], zoom: 14, duration: mDur(1200) });
   }
 }
 
@@ -2875,12 +2953,12 @@ function showSegmentPreview() {
     const bounds = new maplibregl.LngLatBounds()
       .extend([_segFromGeo.lng, _segFromGeo.lat])
       .extend([_segToGeo.lng,   _segToGeo.lat]);
-    map.fitBounds(bounds, { padding:100, maxZoom:13, duration:1400, pitch:50 });
+    map.fitBounds(bounds, { padding:100, maxZoom:13, duration:mDur(1400), pitch:50 });
     // Switch panel to show map
     switchPanel('map', null);
   } else {
     const single = _segFromGeo || _segToGeo;
-    if (single) map.flyTo({ center:[single.lng, single.lat], zoom:12, pitch:50, duration:1000 });
+    if (single) map.flyTo({ center:[single.lng, single.lat], zoom:12, pitch:50, duration:mDur(1000) });
   }
 }
 
@@ -3071,7 +3149,7 @@ function renderMembersList(){
     const joinedDate = p.joined_at ? new Date(p.joined_at).toLocaleDateString('he-IL') : '—';
 
     return `<div class="member-card">
-      <div class="member-avatar" style="background:${avatarColor}">${esc(initial)}</div>
+      <div class="member-avatar" style="background:${avatarColor};color:${fgFor(avatarColor)}">${esc(initial)}</div>
       <div class="member-info">
         <div class="member-name">
           ${esc(p.display_name || '—')}

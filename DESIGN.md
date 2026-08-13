@@ -8,8 +8,8 @@ colors:
   hairline: "#272727"
   hairline-strong: "#333"
   bone: "#e6e3dc"
-  stone-muted: "#6b6660"
-  stone-faint: "#4a4745"
+  stone-muted: "#8f8a82"
+  stone-faint: "#827c74"
   summit-brass: "#c9a84c"
   summit-brass-wash: "rgba(201,168,76,.12)"
   summit-brass-edge: "rgba(201,168,76,.3)"
@@ -180,15 +180,17 @@ Each status colour appears in two registers: full strength for text and icon str
 - **Slate Raised** (`#1e1e1e`): the one step above panel, for stat tiles and passive metadata pills.
 - **Hairline** (`#272727`) / **Hairline Strong** (`#333`): all division. There is no other divider mechanism.
 - **Bone** (`#e6e3dc`): primary text. Warm off-white, never pure `#fff` in chrome — pure white is reserved for elements sitting on top of the satellite map.
-- **Stone Muted** (`#6b6660`): secondary text and every uppercase micro-label.
-- **Stone Faint** (`#4a4745`): the quietest tier — permission descriptions, "view only" badges, quoted trip notes.
+- **Stone Muted** (`#8f8a82`): secondary text and every uppercase micro-label. 5.28:1 on Slate Panel — the floor for anything that carries a word.
+- **Stone Faint** (`#827c74`): the quietest tier, and deliberately narrow. Its only consumer is the role-permissions block, which sits on Ink Black (4.74:1). It is not a general-purpose third grey: anything on a lighter surface uses Stone Muted instead.
 
 ### Named Rules
 **The Colour-Belongs-To-Data Rule.** If a saturated colour on screen is not (a) the brass on the one live control, (b) a booked/pending/unbooked status, or (c) a per-day route identity, it is wrong. Chrome is grey.
 
 **The Two-Register Rule.** A status colour never appears as a bare tint. It appears as full-strength text or stroke on its own 12%-alpha wash, or not at all.
 
-**The Warm-White Rule.** `#e6e3dc` in the interface; `#fff` only for marks drawn over the satellite map, where it is a casing colour against terrain.
+**The Warm-White Rule.** `#e6e3dc` in the interface. Pure `#fff` belongs to marks drawn over the satellite map, where it is a casing colour against terrain — never to interface chrome.
+
+**The Readable-Ink Rule.** Text sitting on a day colour or an avatar colour never assumes white. The day palette has to stay bright to stay distinguishable over aerial imagery, so the *text* flips instead: `fgFor()` returns `#fff` or `#0c0c0c` per fill, whichever clears 4.5:1. Darkening the palette to rescue white text is the wrong trade — it costs map legibility, which is the palette's entire job.
 
 ## Typography
 
@@ -236,6 +238,7 @@ Shadows exist for exactly one reason: an element is physically above the satelli
 ### Shadow Vocabulary
 - **Over-map float** (`box-shadow: 0 8px 24px rgba(0,0,0,.6)`): the toast, and MapLibre popups. Says "this is above the terrain".
 - **Marker lift** (`box-shadow: 0 2px 8px rgba(0,0,0,.7)`, and `filter: drop-shadow(0 2px 6px rgba(0,0,0,.7))` on hut markers): separates a mark from aerial imagery it would otherwise disappear into.
+- **Status ring** (`box-shadow: 0 0 0 2px var(--ok | --warn | --danger)`): a hut marker's booking state. All three states carry a ring — an absent ring would be indistinguishable from a ring that failed to render.
 - **Floating control** (`box-shadow: 0 2px 12px rgba(0,0,0,.5)`): the mobile hamburger, which sits over live content.
 - **Scrim** (`background: rgba(0,0,0,.65)`): drawer overlays. Not a shadow — an occlusion layer.
 
@@ -248,7 +251,7 @@ Shadows exist for exactly one reason: an element is physically above the satelli
 
 Sharply machined. `--radius: 2px` is the global corner and it reads as square at every size; it is applied to buttons, inputs, chips, cards, pills, tiles, panels and the toast alike. Only four exceptions exist, each earned: `3px` on map marker labels, `4px` on the hamburger's bars, `8px` on the floating mobile hamburger (a physically separate object), and `50%` on things that are genuinely circular — avatars, day-number bubbles, legend dots, hut markers.
 
-Borders do the work radius doesn't: every surface is defined by a 1px `--border` hairline, and state is expressed by changing a border's colour rather than its weight. Active states use a 2–3px coloured edge bar on **one side** of the element, and in this RTL layout that bar belongs on the **right** (leading) edge. The mountain-pass markers on the map use `clip-path: polygon(50% 0%, 0% 100%, 100% 100%)` — a triangle for a col, a circle for a refuge — the only non-rectilinear form language in the system.
+Borders do the work radius doesn't: every surface is defined by a 1px `--border` hairline, and state is expressed by changing a border's colour rather than its weight. Active states use a 2–3px coloured edge bar on **one side** of the element, declared as `border-inline-start` so it lands on the right in RTL without anyone having to remember which physical side that is. Divider and panel edges use `border-inline-end` for the same reason. A given element carries **one** edge bar: a card that already has a data-coloured leading edge expresses selection with the accent wash alone. The mountain-pass markers on the map use `clip-path: polygon(50% 0%, 0% 100%, 100% 100%)` — a triangle for a col, a circle for a refuge — the only non-rectilinear form language in the system.
 
 ## Components
 
@@ -283,11 +286,11 @@ Borders do the work radius doesn't: every surface is defined by a 1px `--border`
 Three coordinated layers, all label-only — no icons anywhere in this system.
 - **Desktop topbar tabs** (`.nav-btn`): 12px uppercase `0.06em` Stone Muted; active goes *darker* (Ink Black fill) with Bone text.
 - **Desktop side nav** (`.admin-nav-item`, `.info-tab`): full-width right-aligned rows; active state is a brass edge bar plus `summit-brass-wash`. The info tabs instead use a 2px brass **bottom** border — the one place the active indicator is horizontal, because they are a tab strip rather than a list.
-- **Mobile drawers**: the primary drawer slides in from the **right** (`right: -300px → 0`, 280px, `.25s cubic-bezier(.4,0,.2,1)`) behind a 65% scrim, at 15px/500 with 14px 20px rows — deliberately larger than the desktop equivalents. The admin sub-drawer is the same object at 260px sliding from the left.
+- **Mobile drawers**: both slide in from the **right** — the leading edge in RTL — behind a 65% scrim (`right: -300px → 0`, 280px, `.25s cubic-bezier(.4,0,.2,1)`), at 15px/500 with 14px 20px rows, deliberately larger than the desktop equivalents. The admin sub-drawer is the same object at 260px. Two drawers arriving from opposite sides read as two different gestures; they arrive from the same side.
 
 ### Signature Component: the map mark set
 The system's most product-specific work, and the place the palette inverts — pure white, full saturation, real shadows, because these sit on aerial imagery.
-- **Hut marker:** a 34px circle in that day's route colour, 3px `rgba(255,255,255,.9)` border, day number inside, a CSS triangle tip below drawn from `currentColor`, a truncated name plate under it (`rgba(0,0,0,.82)`, 9px), and `scale(1.25)` on hover. Booked and pending add an outer `box-shadow` ring in green or amber.
+- **Hut marker:** a 34px circle in that day's route colour, 3px `rgba(255,255,255,.9)` border, the day number inside in whichever ink `fgFor()` returns, and a CSS triangle tip below drawn from a `--tip` custom property (not `currentColor` — that would tie the digit's colour to the pointer's). Under it a truncated name plate (`rgba(0,0,0,.82)`, 9px) prefixed by a status glyph (`✓` / `⋯` / `!`) in its status colour, so state survives greyscale and daylight. All three states carry an outer status ring. `scale(1.25)` on hover.
 - **Day-number bubble:** a 28px circle at 40% along each day's line, `scale(1.3)` on hover, click-linked to the matching day card.
 - **Pass marker:** 18px brass-to-day-colour triangle for a col, 12px circle for a refuge.
 - **Route line:** three stacked strokes per day — a 14px black shadow at 0.35, a 10px white casing at 0.9, and a 6px day-colour line — so a saturated trail stays readable over snow, rock and forest alike. Selecting a day drops the others to 0.15 opacity and 2px.
@@ -301,7 +304,9 @@ The system's only global feedback channel: bottom-centred, Slate Panel, 2px corn
 - **Do** keep chrome monochrome and spend colour on data. Brass = live control; green/amber/red = booking status; the eight bright hues = hiking days.
 - **Do** use 2px corners for everything rectangular. Reserve `50%` for genuinely circular objects and `8px` only for something floating free of the layout.
 - **Do** separate with a 1px `--border` hairline and a tonal step. That is the whole depth system.
-- **Do** put the active-state edge bar on the **right** (leading) edge, and keep it 2–3px.
+- **Do** declare the active-state edge bar as `border-inline-start` (2–3px) and panel/divider edges as `border-inline-end`, so RTL is structural rather than remembered.
+- **Do** pick text colour on a coloured fill with `fgFor()`, and keep every interface text token above 4.5:1 on the surface it actually sits on.
+- **Do** cut travel under `prefers-reduced-motion` — drawer slides, marker scaling, bar fills, and MapLibre camera durations via `mDur()` — while leaving colour and border transitions intact, because those carry state.
 - **Do** write region, field and unit labels at 10–11px, weight 600, `0.1em` tracking, Stone Muted.
 - **Do** keep transitions at `.15s` on colour and border only, and `.25s` for drawers and the toast.
 - **Do** use pure `#fff` and real shadows on marks drawn over the satellite map — that is where the palette legitimately inverts.
@@ -318,4 +323,7 @@ The system's only global feedback channel: bottom-centred, Slate Panel, 2px corn
 - **Don't** add icons to navigation. This system is label-only, and its labels are its character.
 - **Don't** apply `letter-spacing` or `text-transform: uppercase` to Hebrew body copy.
 - **Don't** put a saturated status colour on screen without its 12%-alpha wash behind it.
+- **Don't** darken the day palette to make white text pass contrast. Flip the text, not the fill — the palette's brightness is what makes eight routes distinguishable over satellite imagery.
+- **Don't** signal a state by the absence of a mark. "Not booked" gets its own ring and its own glyph.
+- **Don't** give one element two edge bars on opposite sides.
 - **Don't** reach for a modal. The existing system has none: it uses panel switching, inline drawers, inline forms and native `confirm()` for destruction.
