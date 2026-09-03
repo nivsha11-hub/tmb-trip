@@ -1,0 +1,15 @@
+# Only index.html is the app. Everything else here is source material,
+# documentation or tooling and must not be publicly served — Vercel matches
+# static files before it applies the rewrite in vercel.json, so anything
+# uploaded is reachable by URL.
+*.sql
+*.pdf
+*.jpeg
+*.jpg
+*.md
+.impeccable/
+.mcp.json
+skills-lock.json
+.claude/
+.agents/
+.codex/
