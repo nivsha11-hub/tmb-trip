@@ -1772,14 +1772,23 @@ function initMap(){
       maxzoom: 14
     });
     map.setTerrain({ source: 'terrain-dem', exaggeration: 1.5 });
-    map.setSky({
-      'sky-color': '#1a3a5c',
-      'sky-horizon-blend': 0.4,
-      'horizon-color': '#4a7fa5',
-      'horizon-fog-blend': 0.4,
-      'fog-color': '#2a4a6a',
-      'fog-ground-blend': 0.5
-    });
+    // setSky does not exist in maplibre-gl 3.6.2 (the version pinned in <head>).
+    // Calling it unguarded threw inside this load handler, which meant EVERY
+    // line below never ran: no route sources, no route layers, no pass markers,
+    // no day-number bubbles. The terrain still rendered because setTerrain runs
+    // first, and the hut markers still appeared because the 'idle' handler calls
+    // refreshMapMarkers() independently -- which is what hid the breakage.
+    // Guarded so it lights up by itself if maplibre is ever upgraded.
+    if (typeof map.setSky === 'function') {
+      map.setSky({
+        'sky-color': '#1a3a5c',
+        'sky-horizon-blend': 0.4,
+        'horizon-color': '#4a7fa5',
+        'horizon-fog-blend': 0.4,
+        'fog-color': '#2a4a6a',
+        'fog-ground-blend': 0.5
+      });
+    }
 
     // ── Per-day route segments (white casing + colored line) ──
     Object.entries(TMB_DAYS).forEach(([dayStr, coords]) => {
