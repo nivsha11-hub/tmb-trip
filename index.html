@@ -280,6 +280,13 @@ input,select,textarea{font:inherit;color:inherit}
 #toast.warn{border-color:rgba(212,136,58,.5);color:var(--warn)}
 #toast.show{opacity:1}
 
+/* Map failure notice — occupies the map box, same flat language as the panels */
+.map-unavailable{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px;background:var(--surface);text-align:center}
+.map-unavailable-title{font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--accent)}
+.map-unavailable-body{font-size:13px;color:var(--text);max-width:46ch;line-height:1.6}
+.map-unavailable-steps{font-size:12px;color:var(--muted);max-width:46ch;line-height:1.9;text-align:right;padding-inline-start:18px}
+.map-unavailable-steps code{background:var(--bg);padding:1px 5px;border-radius:var(--radius);color:var(--text)}
+
 /* empty states */
 .empty-state{padding:32px;text-align:center;color:var(--muted);font-size:13px}
 
@@ -1677,8 +1684,10 @@ async function loadProfileAndStart(){
   } catch(e) {
     console.error('loadProfileAndStart failed:', e);
     document.getElementById('auth-loading').style.display = 'none';
-    // Still try to show app if we have a profile
-    if (sbProfile) { startApp(); } else {
+    // Still try to show app if we have a profile. Guarded because this catch
+    // can be reached *from* startApp() itself, and an unguarded retry rethrows
+    // into an unhandled rejection.
+    if (sbProfile) { try { startApp(); } catch(e2){ console.error('startApp retry failed:', e2); } } else {
       const errEl = document.getElementById('auth-err');
       errEl.style.color = '';
       errEl.textContent = 'שגיאה בטעינת הפרופיל: ' + (e.message || e);
@@ -1817,7 +1826,13 @@ function initMap(){
     ]
   };
 
-  map = new maplibregl.Map({
+  // A WebGL failure here used to take down all of startApp() with it, so the
+  // day list, the equipment checklist and the admin panel died along with the
+  // map -- none of which need WebGL. Contain it: leave `map` undefined (every
+  // consumer already guards on that) and explain the failure in the map's own
+  // box instead of leaving a black rectangle.
+  try {
+    map = new maplibregl.Map({
     container: 'map',
     style: satelliteStyle,
     center: [7.0, 45.85],
@@ -1826,7 +1841,13 @@ function initMap(){
     bearing: -20,
     maxPitch: 85,
     attributionControl: false
-  });
+    });
+  } catch(e) {
+    console.error('map init failed:', e);
+    map = null;
+    showMapUnavailable(e);
+    return;
+  }
 
   map.addControl(new maplibregl.NavigationControl({showCompass:true,showZoom:true}), 'bottom-right');
   map.addControl(new maplibregl.AttributionControl({compact:true}), 'bottom-right');
@@ -2100,6 +2121,26 @@ function refreshMapMarkers(){
       .addTo(map);
     markers.push(m);
   });
+}
+
+// Shown in place of the map when the browser cannot give MapLibre a WebGL
+// context. The rest of the app keeps working.
+function showMapUnavailable(err){
+  const el = document.getElementById('map');
+  if (!el) return;
+  const isWebGL = /webgl/i.test(String(err && (err.message || err.type || err)));
+  el.innerHTML = `
+    <div class="map-unavailable">
+      <div class="map-unavailable-title">${isWebGL ? 'הדפדפן לא מצליח להציג את המפה' : 'שגיאה בטעינת המפה'}</div>
+      <div class="map-unavailable-body">${isWebGL
+        ? 'המפה מצוירת ב-WebGL, והוא מושבת בדפדפן הזה. שאר האפליקציה — רשימת הימים, הלינות, הציוד והניהול — עובדת כרגיל.'
+        : esc(String(err && err.message || err || ''))}</div>
+      ${isWebGL ? `<ol class="map-unavailable-steps">
+        <li>הגדרות Chrome ← מערכת ← להפעיל "שימוש בהאצה גרפית כשזמינה", ולהפעיל מחדש</li>
+        <li>לבדוק ב-<code>chrome://gpu</code> ש-WebGL לא מופיע כ-Disabled</li>
+        <li>לעדכן את מנהל ההתקן של כרטיס המסך</li>
+      </ol>` : ''}
+    </div>`;
 }
 
 function toggle3D(){
