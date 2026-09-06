@@ -10,6 +10,10 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
+  /* Body regions were running the full 1000px+ of a desktop panel for content
+     that needs half that, leaving a dead expanse on the trailing side of every
+     row and stranding each row's last element far from its subject. */
+  --measure:860px;
   --bg:#0c0c0c;
   --surface:#161616;
   --surface2:#1e1e1e;
@@ -163,7 +167,9 @@ input,select,textarea{font:inherit;color:inherit}
 .progress-bar{height:3px;background:var(--border2);border-radius:var(--radius);overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:var(--radius);transition:width .3s}
 .equip-main{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.equip-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;padding:24px 32px 0}
+.equip-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-shrink:0;padding:24px 32px 0}
+.equip-header>*{max-width:none}
+.equip-header,.filter-bar{max-width:calc(var(--measure) + 64px);margin-inline-end:auto}
 .equip-header h1{font-size:18px;font-weight:700}
 .equip-header-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .filter-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;padding:0 32px;flex-shrink:0}
@@ -173,6 +179,7 @@ input,select,textarea{font:inherit;color:inherit}
 
 /* ─── OVERVIEW PANEL ─── */
 .ov-section{padding:24px 28px;border-bottom:1px solid var(--border)}
+.ov-section>*{max-width:var(--measure);margin-inline-end:auto}
 .ov-section:last-child{border-bottom:none}
 .ov-title{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
 .ov-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:0}
@@ -190,7 +197,10 @@ input,select,textarea{font:inherit;color:inherit}
 .ov-group-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .sidebar-stat{padding:10px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);font-size:12px}
 .sidebar-stat-val{font-weight:700;font-size:15px}
-.equip-cat{margin-bottom:28px}
+.equip-cat{margin-bottom:28px;max-width:var(--measure);margin-inline-end:auto}
+/* An item needs ~340px; a desktop panel gives ~970px. Columns instead of
+   one long ribbon halves the scroll and kills the dead space. */
+.equip-cat-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));column-gap:36px}
 .equip-cat-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .equip-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03)}
 .equip-item:last-child{border-bottom:none}
@@ -211,6 +221,8 @@ input,select,textarea{font:inherit;color:inherit}
 .admin-nav-item:hover{color:var(--text);background:rgba(255,255,255,.02)}
 .admin-nav-item.on{color:var(--text);background:var(--accent-bg);border-inline-start-color:var(--accent)}
 .admin-body{flex:1;overflow-y:auto;padding:28px 32px}
+/* Anchored to the leading (right) edge, next to the nav it belongs to. */
+.admin-body>*{max-width:var(--measure);margin-inline-end:auto}
 .admin-section{display:none}
 .admin-section.on{display:block}
 .admin-section h2{font-size:16px;font-weight:700;margin-bottom:20px}
@@ -265,7 +277,7 @@ input,select,textarea{font:inherit;color:inherit}
 .member-stats{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap}
 .member-equip-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:100%;max-width:180px;margin-bottom:8px}
 .member-equip-fill{height:100%;background:var(--ok);transition:width .3s}
-.member-perms{font-size:10px;color:var(--muted2);background:var(--bg);padding:5px 8px;border-radius:var(--radius);margin-bottom:8px;line-height:1.6}
+.member-perms{font-size:11px;color:var(--muted);background:var(--bg);padding:5px 8px;border-radius:var(--radius);margin-bottom:8px;line-height:1.6}
 .member-actions{display:flex;gap:6px;flex-wrap:wrap}
 .role-btn{padding:5px 12px;font-size:11px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;letter-spacing:.04em}
 .role-btn:hover{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
@@ -398,7 +410,7 @@ input,select,textarea{font:inherit;color:inherit}
   .map-sidebar::-webkit-scrollbar{display:none}
   /* padding-top clears the floating hamburger, which is fixed at the top-right
      — the leading corner in RTL — and would otherwise sit on this heading. */
-  .sidebar-head{width:120px;flex-shrink:0;border-bottom:none;border-inline-end:1px solid var(--border);padding:52px 12px 12px}
+  .sidebar-head{width:120px;flex-shrink:0;border-bottom:none;border-inline-end:1px solid var(--border);padding:64px 12px 12px}
   .sidebar-head h2{font-size:10px;letter-spacing:.08em;line-height:1.4}
   .trip-meta{display:none}
   .sidebar-body{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -1767,7 +1779,7 @@ function startApp(){
   document.getElementById('auth').style.display = 'none';
   document.getElementById('app').classList.add('on');
   document.getElementById('user-tag').textContent = sbProfile.display_name;
-  document.getElementById('user-role-tag').textContent = isAdmin() ? 'מנהל' : 'מטיל';
+  document.getElementById('user-role-tag').textContent = isAdmin() ? 'מנהל' : 'מטייל';
   document.getElementById('admin-nav-btn').style.display = isAdmin() ? '' : 'none';
   // Populate mobile drawer
   document.getElementById('drawer-name').textContent = sbProfile.display_name;
@@ -2346,17 +2358,17 @@ function renderSidebarStats(){
   el.innerHTML = `
     <div class="sidebar-stat">
       <span style="color:var(--muted)">ימים לטיול</span>
-      <span class="sidebar-stat-val" style="color:${diffDays > 0 ? 'var(--accent)' : 'var(--ok)'}">
+      <span class="sidebar-stat-val" style="color:${diffDays > 0 ? 'var(--accent)' : 'var(--muted)'}">
         ${diffDays === null ? '—' : diffDays > 0 ? diffDays : 'עבר'}
       </span>
     </div>
     <div class="sidebar-stat">
       <span style="color:var(--muted)">הציוד שלי</span>
-      <span class="sidebar-stat-val" style="color:var(--ok)">${myPct}%</span>
+      <span class="sidebar-stat-val" style="color:${myPct >= 80 ? 'var(--ok)' : myPct >= 40 ? 'var(--warn)' : 'var(--danger)'}">${myPct}%</span>
     </div>
     <div class="sidebar-stat">
       <span style="color:var(--muted)">לינות מוזמנות</span>
-      <span class="sidebar-stat-val" style="color:var(--ok)">${booked}/${S.huts.length}</span>
+      <span class="sidebar-stat-val" style="color:${booked === S.huts.length ? 'var(--ok)' : booked ? 'var(--warn)' : 'var(--danger)'}"><span dir="ltr">${booked}/${S.huts.length}</span></span>
     </div>
     <div class="sidebar-stat">
       <span style="color:var(--muted)">ימי הליכה</span>
@@ -2378,7 +2390,9 @@ function renderOverviewPanel(){
   const countdownHtml = diffDays === null ? '' :
     diffDays > 0
       ? `<div style="font-size:13px;color:var(--accent);margin-top:8px">עוד <strong>${diffDays}</strong> ימים לטיול</div>`
-      : `<div style="font-size:13px;color:var(--ok);margin-top:8px">הטיול ${Math.abs(diffDays)} ימים לפנינו!</div>`;
+      : diffDays === 0
+        ? `<div style="font-size:13px;color:var(--ok);margin-top:8px">הטיול מתחיל היום</div>`
+        : `<div style="font-size:13px;color:var(--muted);margin-top:8px">הטיול התחיל לפני ${Math.abs(diffDays)} ימים</div>`;
 
   // --- Total km ---
   const totalKm = S.segments.reduce((a,s) => a + Number(s.dist||0), 0);
@@ -2403,15 +2417,14 @@ function renderOverviewPanel(){
   const sortedHuts = [...S.huts].sort((a,b) => a.day - b.day);
   const hutsHtml = sortedHuts.map(h => {
     const color = h.day >= 1 ? SEGMENT_COLORS[(h.day-1) % SEGMENT_COLORS.length] : '#666';
-    const statusColor = h.status==='booked' ? 'var(--ok)' : h.status==='pending' ? 'var(--warn)' : 'var(--danger)';
-    const hutStatusLabel = h.status==='booked' ? 'מוזמן' : h.status==='pending' ? 'בתהליך' : 'לא מוזמן';
+    const hutStatusLabel = statusLabel(h.status);
     return `<div class="ov-hut-row">
       <div class="ov-hut-day" style="background:${color};color:${fgFor(color)}">${h.day === 0 ? '★' : h.day}</div>
       <div class="ov-hut-info">
         <div class="ov-hut-name">${esc(h.name)}</div>
         <div class="ov-hut-meta">${esc(h.date||'')} · ${esc(String(h.altitude))}מ' · ${esc(h.country)}</div>
       </div>
-      <span style="font-size:10px;color:${statusColor};flex-shrink:0">${hutStatusLabel}</span>
+      <span class="status-badge ${h.status}" style="flex-shrink:0">${hutStatusLabel}</span>
     </div>`;
   }).join('');
 
@@ -2458,7 +2471,7 @@ function renderOverviewPanel(){
           <div class="ov-card-label">ק"מ סה"כ</div>
         </div>
         <div class="ov-card">
-          <div class="ov-card-val" style="color:var(--accent)">+${totalUp.toLocaleString()}</div>
+          <div class="ov-card-val" style="color:var(--accent)"><span dir="ltr">+${totalUp.toLocaleString()}</span></div>
           <div class="ov-card-label">מ' עלייה</div>
         </div>
         <div class="ov-card">
@@ -2532,7 +2545,7 @@ function renderEquipPanel(){
     const items = EQUIPMENT.filter(i => i.cat === cat);
     return `<div class="equip-cat">
       <div class="equip-cat-title">${cat}</div>
-      ${items.map(item => {
+      <div class="equip-cat-items">${items.map(item => {
         const checked  = !!userEquip[item.id];
         const disabled = !isOwn && !isAdmin();
         return `<div class="equip-item">
@@ -2545,7 +2558,7 @@ function renderEquipPanel(){
             ${item.note ? `<div class="equip-note">${item.note}</div>` : ''}
           </div>
         </div>`;
-      }).join('')}
+      }).join('')}</div>
     </div>`;
   }).join('');
 }
@@ -3143,7 +3156,7 @@ async function toggleMemberRole(id, newRole){
   p.role = newRole;
   renderMembersList();
   renderOverview();
-  toast(`${p.display_name} עודכן ל${newRole === 'admin' ? 'מנהל' : 'מטיל'}`);
+  toast(`${p.display_name} עודכן ל${newRole === 'admin' ? 'מנהל' : 'מטייל'}`);
 }
 
 function renderMembersList(){
@@ -3174,7 +3187,7 @@ function renderMembersList(){
       </div>
       <div style="text-align:left;font-size:11px;line-height:1.8">
         <div><span style="color:var(--accent)">●</span> מנהל — ${allProfiles.filter(p=>p.role==='admin').length}</div>
-        <div><span style="color:var(--muted)">●</span> מטיל — ${allProfiles.filter(p=>p.role!=='admin').length}</div>
+        <div><span style="color:var(--muted)">●</span> מטייל — ${allProfiles.filter(p=>p.role!=='admin').length}</div>
       </div>
     </div>`;
 
@@ -3195,7 +3208,7 @@ function renderMembersList(){
         <div class="member-name">
           ${esc(p.display_name || '—')}
           ${isMe ? '<span style="font-size:10px;color:var(--muted);font-weight:400">(אתה)</span>' : ''}
-          <span class="member-role ${p.role}">${isAdmin ? 'מנהל' : 'מטיל'}</span>
+          <span class="member-role ${p.role}">${isAdmin ? 'מנהל' : 'מטייל'}</span>
         </div>
         <div class="member-email">${esc(p.email || '—')}</div>
         <div class="member-stats">
@@ -3210,7 +3223,7 @@ function renderMembersList(){
         <div class="member-actions">
           ${!isAdmin
             ? `<button class="role-btn" onclick="toggleMemberRole('${p.id}','admin')">הפוך למנהל</button>`
-            : `<button class="role-btn danger" onclick="toggleMemberRole('${p.id}','member')">הורד למטיל</button>`
+            : `<button class="role-btn danger" onclick="toggleMemberRole('${p.id}','member')">הורד למטייל</button>`
           }
         </div>` : ''}
       </div>
