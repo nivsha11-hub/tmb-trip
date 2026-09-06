@@ -249,7 +249,8 @@ input,select,textarea{font:inherit;color:inherit}
 .add-form{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:24px;border-radius:var(--radius)}
 .loc-result{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s;text-align:right}
 .loc-result:last-child{border-bottom:none}
-.loc-result:hover{background:var(--accent-bg)}
+.loc-result:hover,.loc-result.active{background:var(--accent-bg)}
+.loc-result.active .loc-result-name{color:var(--accent)}
 .loc-result-name{font-size:13px;color:var(--text);font-weight:500}
 .loc-result-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .add-form h3{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
@@ -2109,8 +2110,17 @@ function refreshMapMarkers(){
          </div>`
       : '';
 
+    // "טלפון / קישור" rendered as inert text, so the likeliest action on a
+    // trail -- ring the refuge -- was a copy-paste job.
+    const contactUrl = safeUrl(hut.contact);
+    const contactTel = !contactUrl && /^[+\d][\d\s()\-]{6,}$/.test(hut.contact || '')
+      ? hut.contact.replace(/[^+\d]/g,'') : '';
     const contactHtml = hut.contact
-      ? `<div style="margin-top:4px;font-size:11px;color:#888">${esc(hut.contact)}</div>`
+      ? (contactUrl
+          ? `<div style="margin-top:4px;font-size:11px"><a href="${contactUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">${esc(hut.contact)}</a></div>`
+          : contactTel
+            ? `<div style="margin-top:4px;font-size:11px"><a href="tel:${esc(contactTel)}" style="color:var(--accent)" dir="ltr">${esc(hut.contact)}</a></div>`
+            : `<div style="margin-top:4px;font-size:11px;color:var(--muted)">${esc(hut.contact)}</div>`)
       : '';
 
     const dateChip = hut.date
@@ -2223,7 +2233,7 @@ function renderTripMeta(){
   const startFmt=t.start?new Date(t.start).toLocaleDateString('he-IL',{day:'numeric',month:'long'}):'—';
   const endFmt=t.end?new Date(t.end).toLocaleDateString('he-IL',{day:'numeric',month:'long'}):'—';
   el.innerHTML=`
-    <div class="trip-meta-row"><span class="label">קבוצה</span><span class="val">${t.group}</span></div>
+    <div class="trip-meta-row"><span class="label">קבוצה</span><span class="val">${esc(t.group)}</span></div>
     <div class="trip-meta-row"><span class="label">תאריכים</span><span class="val">${startFmt} — ${endFmt}</span></div>
   `;
 }
@@ -2422,7 +2432,7 @@ function renderOverviewPanel(){
   // --- Huts with warnings ---
   const warnings = S.huts.filter(h => h.notes && h.notes.includes('⚠️'));
   const warningsHtml = warnings.map(h =>
-    `<div class="ov-warning">⚠️ <strong>${h.name}</strong><br>${h.notes.replace('⚠️','').trim()}</div>`
+    `<div class="ov-warning">⚠️ <strong>${esc(h.name)}</strong><br>${esc(h.notes.replace('⚠️','').trim())}</div>`
   ).join('');
 
   // --- Huts list ---
@@ -2729,24 +2739,76 @@ async function fetchLocationSuggestions(q) {
       resultsEl.innerHTML = '<div class="loc-result"><div class="loc-result-name" style="color:var(--muted)">לא נמצאו תוצאות</div></div>';
       return;
     }
-    resultsEl.innerHTML = features.map((f, i) => {
-      const p = f.properties;
-      const name = p.name || p.street || '';
-      const city = [p.city || p.town || p.village, p.country].filter(Boolean).join(', ');
-      const lat = f.geometry.coordinates[1];
-      const lng = f.geometry.coordinates[0];
-      return `<div class="loc-result" onmousedown="selectLocation(event,${lat},${lng},'${(name+'').replace(/'/g,"\\'")}','${(city+'').replace(/'/g,"\\'")}')">
-        <div class="loc-result-name">${name || city}</div>
-        ${city && name ? `<div class="loc-result-sub">${city}</div>` : ''}
-      </div>`;
-    }).join('');
+    renderResults(resultsEl, features, 'hut');
   } catch(e) {
     resultsEl.innerHTML = '<div class="loc-result"><div class="loc-result-name" style="color:var(--danger)">שגיאת חיפוש</div></div>';
   }
 }
 
+// Geocoder results: one renderer for both fields. Values ride in escaped
+// data-* attributes instead of being interpolated into an inline handler
+// (Photon's strings were escaped for ' only, so a " broke out of it), and the
+// list is a real listbox so it can be driven from the keyboard. That matters:
+// addHut() refuses to submit without a picked location, so before this an
+// admin working from the keyboard could not add accommodation at all.
+function renderResults(container, features, which){
+  container.dataset.which = which;
+  container.setAttribute('role','listbox');
+  container.innerHTML = features.map((f, i) => {
+    const p = f.properties;
+    const name = p.name || p.street || '';
+    const city = [p.city || p.town || p.village, p.country].filter(Boolean).join(', ');
+    const lat = f.geometry.coordinates[1];
+    const lng = f.geometry.coordinates[0];
+    return `<div class="loc-result" role="option" id="${container.id}-opt-${i}" aria-selected="false"
+      data-lat="${lat}" data-lng="${lng}" data-name="${esc(name)}" data-city="${esc(city)}">
+      <div class="loc-result-name">${esc(name || city)}</div>
+      ${city && name ? `<div class="loc-result-sub">${esc(city)}</div>` : ''}
+    </div>`;
+  }).join('');
+  container.dataset.active = '-1';
+}
+
+const RESULT_INPUTS = { 'hut':'h-location-search', 'from':'r-from-search', 'to':'r-to-search' };
+const INPUT_RESULTS = { 'h-location-search':'location-results', 'r-from-search':'seg-from-results', 'r-to-search':'seg-to-results' };
+
+function commitResult(container, opt){
+  const lat = Number(opt.dataset.lat), lng = Number(opt.dataset.lng);
+  const name = opt.dataset.name, city = opt.dataset.city;
+  if (container.dataset.which === 'hut') selectLocation(null, lat, lng, name, city);
+  else selectSegLocation(null, container.dataset.which, lat, lng, name || city);
+}
+
+function moveActive(container, delta){
+  const opts = [...container.querySelectorAll('.loc-result[role="option"]')];
+  if (!opts.length) return;
+  let i = Number(container.dataset.active ?? -1) + delta;
+  if (i < 0) i = opts.length - 1;
+  if (i >= opts.length) i = 0;
+  opts.forEach(o => { o.classList.remove('active'); o.setAttribute('aria-selected','false'); });
+  opts[i].classList.add('active');
+  opts[i].setAttribute('aria-selected','true');
+  opts[i].scrollIntoView({ block:'nearest' });
+  container.dataset.active = String(i);
+  const input = document.getElementById(RESULT_INPUTS[container.dataset.which]);
+  if (input) input.setAttribute('aria-activedescendant', opts[i].id);
+}
+
+function openResultsFor(input){
+  const el = document.getElementById(INPUT_RESULTS[input.id] || '');
+  return (el && el.style.display !== 'none') ? el : null;
+}
+
+document.addEventListener('mousedown', e => {
+  const opt = e.target.closest && e.target.closest('.loc-result[role="option"]');
+  if (!opt) return;
+  e.preventDefault();                 // keep focus in the field
+  const container = opt.closest('[role="listbox"]');
+  if (container) commitResult(container, opt);
+});
+
 function selectLocation(e, lat, lng, name, sub) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   _pendingGeo = { lat, lng };
 
   // Fill search field with selected name
@@ -2925,25 +2987,14 @@ async function fetchSegSuggestions(q, resultsId, which) {
       el.innerHTML='<div class="loc-result"><div class="loc-result-name" style="color:var(--muted)">לא נמצא</div></div>';
       return;
     }
-    el.innerHTML = data.features.map(f => {
-      const p = f.properties;
-      const name = p.name || p.street || '';
-      const city = [p.city||p.town||p.village, p.country].filter(Boolean).join(', ');
-      const lat = f.geometry.coordinates[1];
-      const lng = f.geometry.coordinates[0];
-      const safeName = (name||city).replace(/'/g,"\\'");
-      return `<div class="loc-result" onmousedown="selectSegLocation(event,'${which}',${lat},${lng},'${safeName}')">
-        <div class="loc-result-name">${name||city}</div>
-        ${city&&name?`<div class="loc-result-sub">${city}</div>`:''}
-      </div>`;
-    }).join('');
+    renderResults(el, data.features, which);
   } catch(e) {
     el.innerHTML='<div class="loc-result"><div class="loc-result-name" style="color:var(--danger)">שגיאת חיפוש</div></div>';
   }
 }
 
 function selectSegLocation(e, which, lat, lng, name) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   const inputId   = which==='from' ? 'r-from-search' : 'r-to-search';
   const resultsId = which==='from' ? 'seg-from-results' : 'seg-to-results';
   document.getElementById(inputId).value = name;
@@ -2962,8 +3013,8 @@ function updateSegGeoStatus() {
   const el = document.getElementById('seg-geo-status');
   if (!el) return;
   const parts = [];
-  if (_segFromGeo) parts.push(`מ: ${_segFromGeo.name} (${_segFromGeo.lat.toFixed(4)}, ${_segFromGeo.lng.toFixed(4)})`);
-  if (_segToGeo)   parts.push(`אל: ${_segToGeo.name} (${_segToGeo.lat.toFixed(4)}, ${_segToGeo.lng.toFixed(4)})`);
+  if (_segFromGeo) parts.push(`מ: ${_segFromGeo.name} (‎${_segFromGeo.lat.toFixed(4)}, ${_segFromGeo.lng.toFixed(4)}‎)`);
+  if (_segToGeo)   parts.push(`אל: ${_segToGeo.name} (‎${_segToGeo.lat.toFixed(4)}, ${_segToGeo.lng.toFixed(4)}‎)`);
   el.textContent = parts.join(' • ');
 }
 
@@ -2979,7 +3030,7 @@ function showSegmentPreview() {
     el.title = _segFromGeo.name;
     const m = new maplibregl.Marker({ element: el })
       .setLngLat([_segFromGeo.lng, _segFromGeo.lat])
-      .setPopup(new maplibregl.Popup({ offset:10 }).setHTML(`<div style="font-size:12px;font-weight:600;color:#4a9e6e">מוצא</div><div style="font-size:11px">${_segFromGeo.name}</div>`))
+      .setPopup(new maplibregl.Popup({ offset:10 }).setHTML(`<div style="font-size:12px;font-weight:600;color:#4a9e6e">מוצא</div><div style="font-size:11px">${esc(_segFromGeo.name)}</div>`))
       .addTo(map);
     _segPreviewMarkers.push(m);
   }
@@ -2991,7 +3042,7 @@ function showSegmentPreview() {
     el.title = _segToGeo.name;
     const m = new maplibregl.Marker({ element: el })
       .setLngLat([_segToGeo.lng, _segToGeo.lat])
-      .setPopup(new maplibregl.Popup({ offset:10 }).setHTML(`<div style="font-size:12px;font-weight:600;color:#d4883a">יעד</div><div style="font-size:11px">${_segToGeo.name}</div>`))
+      .setPopup(new maplibregl.Popup({ offset:10 }).setHTML(`<div style="font-size:12px;font-weight:600;color:#d4883a">יעד</div><div style="font-size:11px">${esc(_segToGeo.name)}</div>`))
       .addTo(map);
     _segPreviewMarkers.push(m);
   }
@@ -3372,7 +3423,37 @@ function toast(msg,type='ok'){
 
 document.addEventListener('keydown', e => {
   const authVisible = document.getElementById('auth').style.display !== 'none';
-  if (e.key === 'Enter' && authVisible) doAuthAction();
+  if (e.key === 'Enter' && authVisible) { doAuthAction(); return; }
+
+  // Geocoder list, when the caret is in one of the search fields.
+  const input = e.target;
+  if (input && INPUT_RESULTS[input.id]) {
+    const container = openResultsFor(input);
+    if (container) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(container, 1); return; }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); moveActive(container, -1); return; }
+      if (e.key === 'Enter') {
+        const opts = [...container.querySelectorAll('.loc-result[role="option"]')];
+        const i = Number(container.dataset.active ?? -1);
+        if (opts[i]) { e.preventDefault(); commitResult(container, opts[i]); return; }
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        container.style.display = 'none';
+        input.removeAttribute('aria-activedescendant');
+        return;
+      }
+    }
+  }
+
+  if (e.key === 'Escape') {
+    if (document.getElementById('admin-sub-drawer')?.classList.contains('open')) {
+      closeAdminDrawer(); document.getElementById('admin-burger-btn')?.focus(); return;
+    }
+    if (document.getElementById('mobile-drawer')?.classList.contains('open')) {
+      closeMobileNav(); document.getElementById('hamburger-btn')?.focus(); return;
+    }
+  }
 });
 
 // ══════════════════════════════════════════
