@@ -44,7 +44,7 @@ input,select,textarea{font:inherit;color:inherit}
 /* ─── AUTH ─── */
 #auth{display:flex;align-items:center;justify-content:center;height:100dvh;flex-direction:column;gap:40px}
 #auth-box{width:360px;background:var(--surface);border:1px solid var(--border);padding:40px}
-.auth-title{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.auth-title{font-size:13px;font-weight:600;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
 .auth-sub{font-size:12px;color:var(--muted);margin-bottom:28px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
@@ -117,7 +117,10 @@ input,select,textarea{font:inherit;color:inherit}
 /* MAP CONTROLS OVERLAY */
 .map-overlay{position:absolute;top:16px;left:16px;z-index:10;display:flex;flex-direction:column;gap:8px}
 .map-ctrl{padding:7px 13px;background:var(--surface);border:1px solid var(--border);font-size:11px;letter-spacing:.06em;color:var(--text);border-radius:var(--radius);transition:all .15s;white-space:nowrap}
-.map-ctrl:hover,.map-ctrl.on{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
+.map-ctrl:hover{border-color:var(--accent-border);color:var(--accent)}
+/* On-state must not read the same as hover, or a toggle cannot report itself. */
+.map-ctrl.on{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
+.map-ctrl:not(.on){color:var(--muted)}
 .map-legend{position:absolute;bottom:32px;left:16px;z-index:10;background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-size:11px;border-radius:var(--radius)}
 .legend-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;color:var(--muted)}
 .legend-row:last-child{margin-bottom:0}
@@ -202,7 +205,10 @@ input,select,textarea{font:inherit;color:inherit}
    one long ribbon halves the scroll and kills the dead space. */
 .equip-cat-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));column-gap:36px}
 .equip-cat-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.equip-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.equip-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer}
+.equip-item.is-readonly{cursor:default}
+.equip-item:hover .equip-name{color:var(--accent)}
+.equip-item.is-readonly:hover .equip-name{color:inherit}
 .equip-item:last-child{border-bottom:none}
 .equip-cb{width:16px;height:16px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;flex-shrink:0;margin-top:2px;appearance:none;-webkit-appearance:none;position:relative;transition:all .15s;border-radius:2px}
 .equip-cb:checked{background:var(--accent);border-color:var(--accent)}
@@ -538,21 +544,21 @@ input,select,textarea{font:inherit;color:inherit}
 <!-- ═══════════ AUTH ═══════════ -->
 <div id="auth">
   <div id="auth-box">
-    <div class="auth-title">Mont Blanc Trek</div>
+    <h1 class="auth-title">Mont Blanc Trek</h1>
     <div class="auth-sub" id="auth-subtitle">Tour du Mont Blanc — כניסה למערכת</div>
     <div class="field" id="auth-name-field" style="display:none">
-      <label>שם תצוגה</label>
+      <label for="auth-name">שם תצוגה</label>
       <input type="text" id="auth-name" autocomplete="name" placeholder="שמך המלא">
     </div>
     <div class="field">
-      <label>אימייל</label>
+      <label for="auth-email">אימייל</label>
       <input type="email" id="auth-email" autocomplete="email" placeholder="name@example.com">
     </div>
     <div class="field">
-      <label>סיסמה</label>
+      <label for="auth-pass">סיסמה</label>
       <input type="password" id="auth-pass" autocomplete="current-password" placeholder="לפחות 6 תווים">
     </div>
-    <div class="auth-error" id="auth-err"></div>
+    <div class="auth-error" id="auth-err" role="alert"></div>
     <button class="btn-primary" id="auth-submit" onclick="doAuthAction()">כניסה</button>
     <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">
       <span id="auth-toggle-text">אין לך חשבון?</span>
@@ -586,25 +592,25 @@ input,select,textarea{font:inherit;color:inherit}
   </div>
 
   <!-- Hamburger: outside topbar so display:none on topbar doesn't hide it -->
-  <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="תפריט">
+  <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="תפריט" aria-expanded="false" aria-controls="mobile-drawer">
     <span></span><span></span><span></span>
   </button>
 
-  <div class="topbar">
+  <header class="topbar">
     <div class="logo">Mont Blanc Trek</div>
-    <div class="nav">
+    <nav class="nav" aria-label="ניווט ראשי">
       <button class="nav-btn on" id="nav-btn-map" onclick="switchPanel('map',this)">מפה</button>
       <button class="nav-btn" id="nav-btn-equip" onclick="switchPanel('equip',this)">סקירה</button>
       <button class="nav-btn" id="admin-nav-btn" onclick="switchPanel('admin',this)" style="display:none">ניהול</button>
-    </div>
+    </nav>
     <div class="topbar-right">
       <span class="admin-tag" id="user-role-tag"></span>
       <span class="user-tag" id="user-tag"></span>
       <button class="logout-btn" onclick="doLogout()">יציאה</button>
     </div>
-  </div>
+  </header>
 
-  <div class="content">
+  <main class="content">
 
     <!-- ══ MAP PANEL ══ -->
     <div class="panel on" id="map-panel">
@@ -618,9 +624,9 @@ input,select,textarea{font:inherit;color:inherit}
       <div class="map-wrap">
         <div id="map"></div>
         <div class="map-overlay">
-          <button class="map-ctrl on" id="ctrl-3d" onclick="toggle3D()">תלת ממד</button>
-          <button class="map-ctrl on" id="ctrl-route" onclick="toggleRoute()">מסלול</button>
-          <button class="map-ctrl on" id="ctrl-huts" onclick="toggleHuts()">בקתות</button>
+          <button class="map-ctrl on" id="ctrl-3d" onclick="toggle3D()" aria-pressed="true">תלת ממד</button>
+          <button class="map-ctrl on" id="ctrl-route" onclick="toggleRoute()" aria-pressed="true">מסלול</button>
+          <button class="map-ctrl on" id="ctrl-huts" onclick="toggleHuts()" aria-pressed="true">בקתות</button>
         </div>
         <div class="map-legend" id="map-legend">
           <div class="legend-title" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">מסלול לפי ימים</div>
@@ -667,7 +673,7 @@ input,select,textarea{font:inherit;color:inherit}
         <div id="checklist-panel" style="display:none;height:100%;overflow:hidden;flex-direction:column">
           <div class="equip-header">
             <div>
-              <h1 id="equip-viewing-name"></h1>
+              <h2 id="equip-viewing-name"></h2>
               <div class="equip-header-sub" id="equip-progress-text"></div>
             </div>
             <span class="own-only" id="equip-own-badge"></span>
@@ -683,7 +689,7 @@ input,select,textarea{font:inherit;color:inherit}
       <!-- Mobile admin nav bar: shows current section + hamburger -->
       <div class="admin-mobile-bar" id="admin-mobile-bar">
         <span id="admin-mobile-title">סקירה כללית</span>
-        <button class="admin-mobile-hamburger" onclick="toggleAdminDrawer()" aria-label="תפריט ניהול">
+        <button class="admin-mobile-hamburger" id="admin-burger-btn" onclick="toggleAdminDrawer()" aria-label="תפריט ניהול" aria-expanded="false" aria-controls="admin-sub-drawer">
           <span></span><span></span><span></span>
         </button>
       </div>
@@ -703,13 +709,13 @@ input,select,textarea{font:inherit;color:inherit}
         </div>
       </div>
 
-      <div class="admin-nav">
+      <nav class="admin-nav" aria-label="מקטעי ניהול">
         <button class="admin-nav-item on" onclick="adminSection('overview',this)">סקירה כללית</button>
         <button class="admin-nav-item" onclick="adminSection('huts',this)">בקתות ולינה</button>
         <button class="admin-nav-item" onclick="adminSection('route',this)">מקטעי מסלול</button>
         <button class="admin-nav-item" onclick="adminSection('members',this)">חברי קבוצה</button>
         <button class="admin-nav-item" onclick="adminSection('trip',this)">פרטי טיול</button>
-      </div>
+      </nav>
       <div class="admin-body">
 
         <!-- OVERVIEW -->
@@ -728,21 +734,21 @@ input,select,textarea{font:inherit;color:inherit}
             <h3>הוסף בקתה / לינה</h3>
             <div class="form-grid">
               <div class="field-sm form-full" style="position:relative">
-                <label>חפש מיקום</label>
+                <label for="h-location-search">חפש מיקום</label>
                 <input type="text" id="h-location-search" placeholder="הקלד שם בקתה, מלון או כתובת..." oninput="onLocationSearch()" onblur="hideLocationResults()" autocomplete="off">
                 <div id="location-results" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:var(--surface2);border:1px solid var(--border2);border-top:none;max-height:220px;overflow-y:auto"></div>
               </div>
-              <div class="field-sm"><label>שם</label><input type="text" id="h-name" placeholder="Refuge du..."></div>
-              <div class="field-sm"><label>יום</label><input type="number" id="h-day" min="1" max="14" placeholder="1"></div>
-              <div class="field-sm"><label>גובה (מ')</label><input type="number" id="h-alt" placeholder="2000"></div>
-              <div class="field-sm"><label>מדינה</label>
+              <div class="field-sm"><label for="h-name">שם</label><input type="text" id="h-name" placeholder="Refuge du..."></div>
+              <div class="field-sm"><label for="h-day">יום</label><input type="number" id="h-day" min="1" max="14" placeholder="1"></div>
+              <div class="field-sm"><label for="h-alt">גובה (מ')</label><input type="number" id="h-alt" placeholder="2000"></div>
+              <div class="field-sm"><label for="h-country">מדינה</label>
                 <select id="h-country"><option value="FR">צרפת (FR)</option><option value="IT">איטליה (IT)</option><option value="CH">שוויץ (CH)</option></select>
               </div>
-              <div class="field-sm"><label>סטטוס</label>
+              <div class="field-sm"><label for="h-status">סטטוס</label>
                 <select id="h-status"><option value="none">לא מוזמן</option><option value="pending">בתהליך</option><option value="booked">מוזמן</option></select>
               </div>
-              <div class="field-sm"><label>טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר"></div>
-              <div class="field-sm form-full"><label>הערות</label><textarea id="h-notes" placeholder="הערות חשובות..."></textarea></div>
+              <div class="field-sm"><label for="h-contact">טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר"></div>
+              <div class="field-sm form-full"><label for="h-notes">הערות</label><textarea id="h-notes" placeholder="הערות חשובות..."></textarea></div>
             </div>
             <div class="actions">
               <button class="btn-sm primary" id="btn-add-hut" onclick="addHut()">הוסף</button>
@@ -758,28 +764,28 @@ input,select,textarea{font:inherit;color:inherit}
           <div class="add-form">
             <h3>הוסף / ערוך מקטע</h3>
             <div class="form-grid">
-              <div class="field-sm"><label>יום</label><input type="number" id="r-day" min="1" placeholder="1"></div>
+              <div class="field-sm"><label for="r-day">יום</label><input type="number" id="r-day" min="1" placeholder="1"></div>
               <!-- FROM search -->
               <div class="field-sm form-full" style="position:relative">
-                <label>נקודת מוצא — חפש מיקום</label>
+                <label for="r-from-search">נקודת מוצא — חפש מיקום</label>
                 <input type="text" id="r-from-search" placeholder="הקלד שם מקום, עיר..." oninput="onSegFromSearch()" onblur="hideSegResults('seg-from-results')" autocomplete="off">
                 <div id="seg-from-results" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:var(--surface2);border:1px solid var(--border2);border-top:none;max-height:200px;overflow-y:auto"></div>
               </div>
               <!-- TO search -->
               <div class="field-sm form-full" style="position:relative">
-                <label>נקודת יעד — חפש מיקום</label>
+                <label for="r-to-search">נקודת יעד — חפש מיקום</label>
                 <input type="text" id="r-to-search" placeholder="הקלד שם מקום, עיר..." oninput="onSegToSearch()" onblur="hideSegResults('seg-to-results')" autocomplete="off">
                 <div id="seg-to-results" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:var(--surface2);border:1px solid var(--border2);border-top:none;max-height:200px;overflow-y:auto"></div>
               </div>
               <div id="seg-geo-status" style="grid-column:1/-1;font-size:11px;color:var(--muted);min-height:16px"></div>
-              <div class="field-sm"><label>מרחק (ק"מ)</label><input type="number" id="r-dist" placeholder="14"></div>
-              <div class="field-sm"><label>עלייה (מ')</label><input type="number" id="r-up" placeholder="1050"></div>
-              <div class="field-sm"><label>ירידה (מ')</label><input type="number" id="r-down" placeholder="800"></div>
-              <div class="field-sm"><label>זמן משוער</label><input type="text" id="r-time" placeholder="5-6 שעות"></div>
-              <div class="field-sm"><label>רמת קושי</label>
+              <div class="field-sm"><label for="r-dist">מרחק (ק"מ)</label><input type="number" id="r-dist" placeholder="14"></div>
+              <div class="field-sm"><label for="r-up">עלייה (מ')</label><input type="number" id="r-up" placeholder="1050"></div>
+              <div class="field-sm"><label for="r-down">ירידה (מ')</label><input type="number" id="r-down" placeholder="800"></div>
+              <div class="field-sm"><label for="r-time">זמן משוער</label><input type="text" id="r-time" placeholder="5-6 שעות"></div>
+              <div class="field-sm"><label for="r-diff">רמת קושי</label>
                 <select id="r-diff"><option>קל</option><option>קל-בינוני</option><option selected>בינוני</option><option>קשה</option><option>קשה מאוד</option></select>
               </div>
-              <div class="field-sm form-full"><label>תיאור</label><textarea id="r-desc" placeholder="תיאור המקטע..."></textarea></div>
+              <div class="field-sm form-full"><label for="r-desc">תיאור</label><textarea id="r-desc" placeholder="תיאור המקטע..."></textarea></div>
             </div>
             <div class="actions"><button class="btn-sm primary" onclick="addSegment()">הוסף מקטע</button></div>
           </div>
@@ -798,11 +804,11 @@ input,select,textarea{font:inherit;color:inherit}
           <div class="add-form" style="margin-bottom:0">
             <h3>עדכן פרטי טיול</h3>
             <div class="form-grid">
-              <div class="field-sm"><label>שם הטיול</label><input type="text" id="t-name"></div>
-              <div class="field-sm"><label>שם הקבוצה</label><input type="text" id="t-group"></div>
-              <div class="field-sm"><label>תאריך התחלה</label><input type="date" id="t-start"></div>
-              <div class="field-sm"><label>תאריך סיום</label><input type="date" id="t-end"></div>
-              <div class="field-sm form-full"><label>הערות כלליות</label><textarea id="t-notes"></textarea></div>
+              <div class="field-sm"><label for="t-name">שם הטיול</label><input type="text" id="t-name"></div>
+              <div class="field-sm"><label for="t-group">שם הקבוצה</label><input type="text" id="t-group"></div>
+              <div class="field-sm"><label for="t-start">תאריך התחלה</label><input type="date" id="t-start"></div>
+              <div class="field-sm"><label for="t-end">תאריך סיום</label><input type="date" id="t-end"></div>
+              <div class="field-sm form-full"><label for="t-notes">הערות כלליות</label><textarea id="t-notes"></textarea></div>
             </div>
             <div class="actions"><button class="btn-sm primary" onclick="saveTripInfo()">שמור</button></div>
           </div>
@@ -810,10 +816,10 @@ input,select,textarea{font:inherit;color:inherit}
 
       </div>
     </div>
-  </div>
+  </main>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 // ══════════════════════════════════════════
@@ -2157,7 +2163,9 @@ function showMapUnavailable(err){
 
 function toggle3D(){
   is3D = !is3D;
-  document.getElementById('ctrl-3d').classList.toggle('on', is3D);
+  const b_ctrl_3d = document.getElementById('ctrl-3d');
+  b_ctrl_3d.classList.toggle('on', is3D);
+  b_ctrl_3d.setAttribute('aria-pressed', String(is3D));
   if (!map) return;
   map.easeTo({ pitch: is3D ? 55 : 0, duration: mDur(600) });
   if (mapLoaded) map.setTerrain(is3D ? { source:'terrain-dem', exaggeration:1.5 } : null);
@@ -2165,7 +2173,9 @@ function toggle3D(){
 
 function toggleRoute(){
   routeVisible = !routeVisible;
-  document.getElementById('ctrl-route').classList.toggle('on', routeVisible);
+  const b_ctrl_route = document.getElementById('ctrl-route');
+  b_ctrl_route.classList.toggle('on', routeVisible);
+  b_ctrl_route.setAttribute('aria-pressed', String(routeVisible));
   if (!map || !mapLoaded) return;
   const vis = routeVisible ? 'visible' : 'none';
   routeLayerIds.forEach(id => {
@@ -2179,7 +2189,9 @@ function toggleRoute(){
 
 function toggleHuts(){
   hutsVisible = !hutsVisible;
-  document.getElementById('ctrl-huts').classList.toggle('on', hutsVisible);
+  const b_ctrl_huts = document.getElementById('ctrl-huts');
+  b_ctrl_huts.classList.toggle('on', hutsVisible);
+  b_ctrl_huts.setAttribute('aria-pressed', String(hutsVisible));
   refreshMapMarkers();
 }
 
@@ -2548,16 +2560,15 @@ function renderEquipPanel(){
       <div class="equip-cat-items">${items.map(item => {
         const checked  = !!userEquip[item.id];
         const disabled = !isOwn && !isAdmin();
-        return `<div class="equip-item">
+        return `<label class="equip-item${disabled ? ' is-readonly' : ''}">
           <input type="checkbox" class="equip-cb" id="cb_${item.id}_${viewUid}"
             ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}
-            onchange="toggleEquip('${viewUid}','${item.id}',this.checked)"
-            aria-label="${item.name}">
+            onchange="toggleEquip('${viewUid}','${item.id}',this.checked)">
           <div class="equip-text">
             <div class="equip-name ${checked ? 'done' : ''}">${item.name}</div>
             ${item.note ? `<div class="equip-note">${item.note}</div>` : ''}
           </div>
-        </div>`;
+        </label>`;
       }).join('')}</div>
     </div>`;
   }).join('');
@@ -3291,13 +3302,16 @@ function toggleMobileNav(){
   const open=drawer.classList.toggle('open');
   overlay.classList.toggle('open',open);
   burger.classList.toggle('open',open);
+  burger.setAttribute('aria-expanded', String(open));
   document.body.style.overflow=open?'hidden':'';
 }
 
 function closeMobileNav(){
   document.getElementById('mobile-drawer').classList.remove('open');
   document.getElementById('mobile-overlay').classList.remove('open');
-  document.getElementById('hamburger-btn').classList.remove('open');
+  const b=document.getElementById('hamburger-btn');
+  b.classList.remove('open');
+  b.setAttribute('aria-expanded','false');
   document.body.style.overflow='';
 }
 
@@ -3328,12 +3342,14 @@ function toggleAdminDrawer(){
   const overlay = document.getElementById('admin-sub-overlay');
   const open = drawer.classList.toggle('open');
   overlay.classList.toggle('open', open);
+  document.getElementById('admin-burger-btn')?.setAttribute('aria-expanded', String(open));
   document.body.style.overflow = open ? 'hidden' : '';
 }
 
 function closeAdminDrawer(){
   document.getElementById('admin-sub-drawer').classList.remove('open');
   document.getElementById('admin-sub-overlay').classList.remove('open');
+  document.getElementById('admin-burger-btn')?.setAttribute('aria-expanded','false');
   document.body.style.overflow = '';
 }
 
