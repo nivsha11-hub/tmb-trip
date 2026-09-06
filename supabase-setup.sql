@@ -143,6 +143,8 @@ create policy "profiles admin write"
 drop policy if exists "equip read all"    on public.equipment_progress;
 drop policy if exists "equip write own"   on public.equipment_progress;
 drop policy if exists "equip update own"  on public.equipment_progress;
+drop policy if exists "equip write own or admin"  on public.equipment_progress;
+drop policy if exists "equip update own or admin" on public.equipment_progress;
 drop policy if exists "equip delete own"  on public.equipment_progress;
 
 create policy "equip read all"
@@ -150,16 +152,18 @@ create policy "equip read all"
   to authenticated
   using (true);
 
-create policy "equip write own"
+-- Admins maintain other members' gear from the members panel, so insert and
+-- update carry the same is_admin() escape delete always had.
+create policy "equip write own or admin"
   on public.equipment_progress for insert
   to authenticated
-  with check (user_id = auth.uid());
+  with check (user_id = auth.uid() or public.is_admin());
 
-create policy "equip update own"
+create policy "equip update own or admin"
   on public.equipment_progress for update
   to authenticated
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
 
 create policy "equip delete own"
   on public.equipment_progress for delete

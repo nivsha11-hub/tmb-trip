@@ -54,13 +54,6 @@ input,select,textarea{font:inherit;color:inherit}
 .btn-primary:hover{opacity:.85}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed}
 .auth-error{font-size:12px;color:var(--danger);margin-top:8px;min-height:16px}
-.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:11px}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
-.quick-login{display:flex;flex-direction:column;gap:6px}
-.quick-btn{padding:8px 12px;border:1px solid var(--border);background:transparent;text-align:right;font-size:13px;border-radius:var(--radius);transition:all .15s;display:flex;align-items:center;justify-content:space-between}
-.quick-btn:hover{border-color:var(--accent-border);background:var(--accent-bg);color:var(--accent)}
-.quick-btn .role{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
-.quick-btn:hover .role{color:var(--accent)}
 
 /* ─── APP SHELL ─── */
 #app{display:none;height:100dvh;flex-direction:column}
@@ -84,7 +77,6 @@ input,select,textarea{font:inherit;color:inherit}
 
 /* ─── MAP PANEL ─── */
 #map-panel{position:relative}
-#map{flex:1;height:100%}
 .map-sidebar{width:300px;background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
 .sidebar-head{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
 .sidebar-head h2{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
@@ -175,6 +167,8 @@ input,select,textarea{font:inherit;color:inherit}
 .equip-header,.filter-bar{max-width:calc(var(--measure) + 64px);margin-inline-end:auto}
 .equip-header h1{font-size:18px;font-weight:700}
 .equip-header-sub{font-size:12px;color:var(--muted);margin-top:2px}
+/* The 700ms auto-save window had no visual state at all. */
+.equip-header-sub[data-saving]::after{content:" · שומר…";color:var(--accent)}
 .filter-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;padding:0 32px;flex-shrink:0}
 .filter-btn{padding:5px 12px;border:1px solid var(--border);font-size:12px;border-radius:var(--radius);color:var(--muted);transition:all .15s}
 .filter-btn:hover{border-color:var(--border2);color:var(--text)}
@@ -204,7 +198,7 @@ input,select,textarea{font:inherit;color:inherit}
 /* An item needs ~340px; a desktop panel gives ~970px. Columns instead of
    one long ribbon halves the scroll and kills the dead space. */
 .equip-cat-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));column-gap:36px}
-.equip-cat-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.equip-cat-title{position:sticky;top:0;z-index:2;background:var(--bg);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding:6px 0 8px;border-bottom:1px solid var(--border)}
 .equip-item{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer}
 .equip-item.is-readonly{cursor:default}
 .equip-item:hover .equip-name{color:var(--accent)}
@@ -272,7 +266,6 @@ input,select,textarea{font:inherit;color:inherit}
 .member-role{font-size:10px;letter-spacing:.06em;padding:2px 7px;border-radius:var(--radius)}
 .member-role.admin{background:var(--accent-bg);color:var(--accent)}
 .member-role.member{background:var(--surface2);color:var(--muted)}
-.member-role.user{background:var(--surface2);color:var(--muted)}
 
 /* ─── MEMBER CARDS ─── */
 .member-card{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:flex-start;transition:background .15s}
@@ -280,12 +273,14 @@ input,select,textarea{font:inherit;color:inherit}
 .member-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0;letter-spacing:0}
 .member-info{flex:1;min-width:0}
 .member-name{font-size:13px;font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.member-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .member-email{font-size:11px;color:var(--muted);margin-bottom:6px;direction:ltr;text-align:right}
 .member-stats{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap}
 .member-equip-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:100%;max-width:180px;margin-bottom:8px}
 .member-equip-fill{height:100%;background:var(--ok);transition:width .3s}
 .member-perms{font-size:11px;color:var(--muted);background:var(--bg);padding:5px 8px;border-radius:var(--radius);margin-bottom:8px;line-height:1.6}
-.member-actions{display:flex;gap:6px;flex-wrap:wrap}
+.member-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.member-card{max-width:var(--measure)}
 .role-btn{padding:5px 12px;font-size:11px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;letter-spacing:.04em}
 .role-btn:hover{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg)}
 .role-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
@@ -307,7 +302,7 @@ input,select,textarea{font:inherit;color:inherit}
 .map-unavailable-steps code{background:var(--bg);padding:1px 5px;border-radius:var(--radius);color:var(--text)}
 
 /* empty states */
-.empty-state{padding:32px;text-align:center;color:var(--muted);font-size:13px}
+.empty-state{padding:32px;text-align:center;color:var(--muted);font-size:13px;line-height:1.7}
 
 /* Focus visible */
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -427,7 +422,8 @@ input,select,textarea{font:inherit;color:inherit}
      on the trail; km and ascent are desk information. Hide those instead. */
   .day-stats{display:none}
   .day-route{font-size:12px}
-  .map-overlay{top:8px;left:8px;gap:6px}
+  /* A vertical stack of three ate a column of the map on a phone. */
+  .map-overlay{top:8px;left:8px;right:64px;flex-direction:row;flex-wrap:wrap;gap:6px}
   .map-ctrl{padding:12px 16px;font-size:13px}
   /* Route lines stay colour-coded per day on mobile, so the day-to-colour key
      has to stay too — compacted to just the swatches. */
@@ -651,7 +647,7 @@ input,select,textarea{font:inherit;color:inherit}
           <button class="info-tab" id="tab-equip" onclick="switchInfoTab('equip',this)">ציוד</button>
         </div>
         <!-- Member progress (visible in ציוד tab) -->
-        <div id="sidebar-equip-section" style="display:none;flex:1;overflow:hidden;display:none;flex-direction:column">
+        <div id="sidebar-equip-section" style="display:none;flex:1;overflow:hidden;flex-direction:column">
           <div class="equip-sidebar-head" style="border-top:1px solid var(--border)">
             <h2>קבוצה</h2>
             <div style="font-size:11px;color:var(--muted)">התקדמות ציוד</div>
@@ -732,15 +728,18 @@ input,select,textarea{font:inherit;color:inherit}
         <div class="admin-section" id="sec-huts">
           <h2>בקתות ולינה</h2>
           <div class="add-form">
-            <h3>הוסף בקתה / לינה</h3>
+            <h3 id="hut-form-title">הוסף בקתה / לינה</h3>
             <div class="form-grid">
               <div class="field-sm form-full" style="position:relative">
                 <label for="h-location-search">חפש מיקום</label>
                 <input type="text" id="h-location-search" placeholder="הקלד שם בקתה, מלון או כתובת..." oninput="onLocationSearch()" onblur="hideLocationResults()" autocomplete="off">
                 <div id="location-results" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:500;background:var(--surface2);border:1px solid var(--border2);border-top:none;max-height:220px;overflow-y:auto"></div>
               </div>
+              <div class="field-sm"><label for="h-lat">קו רוחב</label><input type="number" step="any" id="h-lat" placeholder="45.9237" dir="ltr"></div>
+              <div class="field-sm"><label for="h-lng">קו אורך</label><input type="number" step="any" id="h-lng" placeholder="6.8694" dir="ltr"></div>
               <div class="field-sm"><label for="h-name">שם</label><input type="text" id="h-name" placeholder="Refuge du..."></div>
-              <div class="field-sm"><label for="h-day">יום</label><input type="number" id="h-day" min="1" max="14" placeholder="1"></div>
+              <div class="field-sm"><label for="h-day">יום</label><input type="number" id="h-day" min="0" max="14" placeholder="1"></div>
+              <div class="field-sm"><label for="h-date">תאריך</label><input type="text" id="h-date" placeholder="23.9"></div>
               <div class="field-sm"><label for="h-alt">גובה (מ')</label><input type="number" id="h-alt" placeholder="2000"></div>
               <div class="field-sm"><label for="h-country">מדינה</label>
                 <select id="h-country"><option value="FR">צרפת (FR)</option><option value="IT">איטליה (IT)</option><option value="CH">שוויץ (CH)</option></select>
@@ -749,10 +748,15 @@ input,select,textarea{font:inherit;color:inherit}
                 <select id="h-status"><option value="none">לא מוזמן</option><option value="pending">בתהליך</option><option value="booked">מוזמן</option></select>
               </div>
               <div class="field-sm"><label for="h-contact">טלפון / קישור</label><input type="text" id="h-contact" placeholder="הטלפון או האתר"></div>
+              <div class="field-sm"><label for="h-type">סוג</label>
+                <select id="h-type"><option value="hut">בקתה</option><option value="hotel">מלון</option><option value="town">עיר</option></select>
+              </div>
+              <div class="field-sm form-full"><label for="h-website">אתר הזמנות</label><input type="url" id="h-website" placeholder="https://..." dir="ltr"></div>
               <div class="field-sm form-full"><label for="h-notes">הערות</label><textarea id="h-notes" placeholder="הערות חשובות..."></textarea></div>
             </div>
             <div class="actions">
               <button class="btn-sm primary" id="btn-add-hut" onclick="addHut()">הוסף</button>
+              <button class="btn-sm" id="btn-cancel-hut" onclick="resetHutForm()" style="display:none">בטל</button>
               <span id="geo-status" style="font-size:11px;color:var(--muted);margin-right:8px"></span>
             </div>
           </div>
@@ -1256,6 +1260,9 @@ const TMB_PASSES = [
 ];
 
 // One bright color per hiking day
+// Shared by member avatars and group rows.
+const AVATAR_COLORS = ['#e76f51','#f4a261','#2a9d8f','#457b9d','#9b5de5','#f15bb5','#00bbf9','#4a9e6e'];
+
 const SEGMENT_COLORS = [
   '#e76f51','#f4a261','#e9c46a','#2a9d8f',
   '#457b9d','#9b5de5','#f15bb5','#00bbf9'
@@ -1294,10 +1301,6 @@ const DEFAULT_TRIP = {
   end:'2025-10-01',
   notes:'TMB — 9 ימים, 3 מדינות (FR/IT/CH). 23.9–1.10.2025. ⚠️ Elisabetta: נשאר ~35€ לשלם במקום.'
 };
-
-const DEFAULT_USERS = [
-  {id:'u0',name:'מנהל',pass:'admin123',role:'admin',equip:{}},
-];
 
 // ══════════════════════════════════════════
 //  STATE
@@ -1367,6 +1370,7 @@ let equipViewId = null;
 let activeDayCard = null;
 let activeAdminSection = 'overview';
 let _equipSaveDebounce = null;
+let _equipSavePendingUid = null;
 
 function loadStateFromLocal(){
   try {
@@ -1764,13 +1768,15 @@ function setupRealtime(){
         // user made while that save was still in flight.
         if (row.updated_at && row.updated_at === _lastLocalWriteAt) return;
         if (_saveInFlight > 0) return;
-        if (document.activeElement?.matches('input,textarea,select')) return;
+        if (document.activeElement?.matches('input,textarea,select')) {
+          _pendingRemoteRow = row;   // re-applied on blur; see below
+          return;
+        }
         if (row.huts     && row.huts.length)     S.huts     = row.huts;
         if (row.segments && row.segments.length) S.segments = row.segments;
         if (row.trip     && Object.keys(row.trip).length) S.trip = row.trip;
         localStorage.setItem('tmb_v4', JSON.stringify({ huts:S.huts, segments:S.segments, trip:S.trip }));
-        renderAll();
-        if (map) refreshMapMarkers();
+        applyRemoteTripUpdate();
       }
     )
     .subscribe(status => {
@@ -1779,6 +1785,34 @@ function setupRealtime(){
       }
     });
 }
+
+// Repaint what a remote trip edit actually changed, without yanking the user
+// out of the tab they are in.
+function applyRemoteTripUpdate(){
+  renderTripMeta();
+  renderDaysList();
+  if (activeInfoTab === 'overview') { renderOverviewPanel(); renderSidebarStats(); }
+  else { renderEquipPanel(); renderMemberProgress(); }
+  if (isAdmin()) { renderOverview(); renderHutsList(); renderSegmentsList(); fillTripForm(); }
+  if (map) refreshMapMarkers();
+}
+
+// A remote update that arrived while the user was typing is held, not lost.
+let _pendingRemoteRow = null;
+document.addEventListener('focusout', () => {
+  if (!_pendingRemoteRow) return;
+  setTimeout(() => {
+    if (!_pendingRemoteRow) return;
+    if (document.activeElement?.matches('input,textarea,select')) return;
+    const row = _pendingRemoteRow; _pendingRemoteRow = null;
+    if (row.huts     && row.huts.length)     S.huts     = row.huts;
+    if (row.segments && row.segments.length) S.segments = row.segments;
+    if (row.trip     && Object.keys(row.trip).length) S.trip = row.trip;
+    cacheLocal();
+    applyRemoteTripUpdate();
+    toast('הנתונים עודכנו במכשיר אחר', 'warn');
+  }, 0);
+});
 
 function startApp(){
   if (!sbProfile) return;
@@ -2105,7 +2139,7 @@ function refreshMapMarkers(){
       ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #333">
            <a href="${hutSafeUrl}" target="_blank" rel="noopener noreferrer"
               style="color:#c9a84c;font-size:11px;text-decoration:none;letter-spacing:.04em">
-             פתח אתר הזמנות →
+             פתח אתר הזמנות ←
            </a>
          </div>`
       : '';
@@ -2261,10 +2295,15 @@ function renderDaysList(){
 
   const el=document.getElementById('days-list');
   const segs=[...S.segments].sort((a,b)=>a.day-b.day);
-  if(!segs.length){el.innerHTML='<div class="empty-state">אין מקטעים</div>';return;}
+  if(!segs.length){el.innerHTML='<div class="empty-state">אין עדיין ימי הליכה.<br>הוסף אותם בפאנל הניהול, במקטעי מסלול.</div>';return;}
   el.innerHTML=segs.map(seg=>{
-    const hut=S.huts.find(h=>h.day===seg.day&&h.type!=='town')||S.huts.find(h=>h.day===seg.day);
-    const hutHtml=hut?`<div class="day-hut"><span class="day-hut-name">${esc(hut.name)}</span><span class="status-badge ${hut.status}">${statusLabel(hut.status)}</span></div>`:'';
+    // Every hut for the day, not just the first match -- a second one used to
+    // vanish from this list while still sitting on the map.
+    const dayHuts = S.huts.filter(h => h.day === seg.day);
+    dayHuts.sort((a,b) => (a.type === 'town') - (b.type === 'town'));
+    const hutHtml = dayHuts.map(hut =>
+      `<div class="day-hut"><span class="day-hut-name">${esc(hut.name)}</span><span class="status-badge ${hut.status}">${statusLabel(hut.status)}</span></div>`
+    ).join('');
     const color = seg.day === 0 ? '#888' : SEGMENT_COLORS[(seg.day-1)%SEGMENT_COLORS.length];
     const dateLabel = seg.date ? `<span style="color:var(--muted);font-size:10px;margin-right:auto">${esc(seg.date)}</span>` : '';
     return`<div class="day-card" onclick="selectDay(${seg.day},this)" id="day-card-${seg.day}" data-day="${seg.day}" style="border-inline-start:3px solid ${color}30">
@@ -2451,7 +2490,6 @@ function renderOverviewPanel(){
   }).join('');
 
   // --- Group members ---
-  const AVATAR_COLORS = ['#e76f51','#f4a261','#2a9d8f','#457b9d','#9b5de5','#f15bb5','#00bbf9','#4a9e6e'];
   const groupHtml = allProfiles.map((p,i) => {
     const done = EQUIPMENT.filter(item => (equipProgress[p.id]||{})[item.id]).length;
     const pct  = Math.round(done / totalItems * 100);
@@ -2536,6 +2574,7 @@ function renderMemberProgress(){
 }
 
 function viewEquip(uid){
+  if (_equipSavePendingUid && _equipSavePendingUid !== uid) flushEquipSave();
   equipViewId = uid;
   renderEquipPanel();
   renderMemberProgress();
@@ -2608,22 +2647,34 @@ function toggleEquip(uid, itemId, checked){
 
   renderMemberProgress();
 
-  // Auto-save with debounce (700ms after last change)
-  if (uid === sbUser?.id) {
-    clearTimeout(_equipSaveDebounce);
-    const progEl2 = document.getElementById('equip-progress-text');
-    if (progEl2) progEl2.dataset.saving = '1';
-    _equipSaveDebounce = setTimeout(async () => {
-      await saveEquipProgress(true);
-      const el = document.getElementById('equip-progress-text');
-      if (el) delete el.dataset.saving;
-    }, 700);
-  }
+  scheduleEquipSave(uid);
 }
 
-async function saveEquipProgress(silent = false){
-  const uid = sbUser?.id;
+// One debounce timer serves every checklist, so the uid has to travel with it:
+// ticking a box on member A and switching to member B inside the window would
+// otherwise save the pending change against the wrong person. Switching users
+// flushes first (see viewEquip).
+function scheduleEquipSave(uid){
+  clearTimeout(_equipSaveDebounce);
+  _equipSavePendingUid = uid;
+  const progEl = document.getElementById('equip-progress-text');
+  if (progEl) progEl.dataset.saving = '1';
+  _equipSaveDebounce = setTimeout(() => flushEquipSave(), 700);
+}
+
+async function flushEquipSave(){
+  clearTimeout(_equipSaveDebounce);
+  const uid = _equipSavePendingUid;
+  if (!uid) return;
+  _equipSavePendingUid = null;
+  await saveEquipProgress(uid, true);
+  const el = document.getElementById('equip-progress-text');
+  if (el) delete el.dataset.saving;
+}
+
+async function saveEquipProgress(uid = sbUser?.id, silent = false){
   if (!uid) { toast('לא מחובר', 'err'); return; }
+  if (uid !== sbUser?.id && !isAdmin()) { toast('אין הרשאה לערוך ציוד של משתמש אחר', 'err'); return; }
 
   const token = await getFreshToken();
   if (!token) {
@@ -2847,30 +2898,37 @@ async function addHut(){
   const btn = document.getElementById('btn-add-hut');
   const statusEl = document.getElementById('geo-status');
 
-  let coords = _pendingGeo;
-  if (!coords) {
-    toast('בחר מיקום מהחיפוש לפני ההוספה', 'warn');
+  const manualLat = parseFloat(document.getElementById('h-lat').value);
+  const manualLng = parseFloat(document.getElementById('h-lng').value);
+  const hasManual = Number.isFinite(manualLat) && Number.isFinite(manualLng);
+  const editing = _editingHutId ? S.huts.find(h => h.id === _editingHutId) : null;
+
+  if (!_pendingGeo && !hasManual && !editing) {
+    toast('בחר מיקום מהחיפוש, או הזן קו רוחב וקו אורך', 'warn');
     document.getElementById('h-location-search')?.focus();
     return;
   }
 
-  // Default to TMB center if still not found
-  const lat = coords?.lat ?? 45.85;
-  const lng = coords?.lng ?? 7.0;
+  const lat = hasManual ? manualLat : (_pendingGeo ? _pendingGeo.lat : editing.lat);
+  const lng = hasManual ? manualLng : (_pendingGeo ? _pendingGeo.lng : editing.lng);
 
   const hut={
-    id:'h_'+Date.now(),
+    id: editing ? editing.id : 'h_'+Date.now(),
     name,
-    day:Number(document.getElementById('h-day').value)||1,
+    day:Number(document.getElementById('h-day').value)||0,
+    date:document.getElementById('h-date').value.trim(),
     altitude:Number(document.getElementById('h-alt').value)||0,
     country:document.getElementById('h-country').value,
     status:document.getElementById('h-status').value,
     contact:document.getElementById('h-contact').value.trim(),
     notes:document.getElementById('h-notes').value.trim(),
-    type:'hut',
+    website:safeUrl(document.getElementById('h-website').value),
+    type:document.getElementById('h-type').value,
     lat, lng
   };
-  S.huts.push(hut);
+  const prevIndex = editing ? S.huts.indexOf(editing) : -1;
+  const prevHut   = editing ? Object.assign({}, editing) : null;
+  if (editing) S.huts[prevIndex] = hut; else S.huts.push(hut);
   if (btn) btn.disabled = true;
   const ok = await saveState();   // wait for the DB before claiming success
   if (btn) btn.disabled = false;
@@ -2878,13 +2936,44 @@ async function addHut(){
   renderOverview();
   renderDaysList();
   refreshMapMarkers();
-  if (ok) toast(coords ? 'בקתה נוספה עם מיקום מדויק' : 'בקתה נוספה (מיקום ידני נדרש)');
+  if (!ok && prevIndex >= 0) { S.huts[prevIndex] = prevHut; cacheLocal(); }
+  else if (!ok) { S.huts.pop(); cacheLocal(); }
+  if (ok) { toast(editing ? 'הבקתה עודכנה' : 'בקתה נוספה'); resetHutForm(); }
+}
+
+let _editingHutId = null;
+
+function resetHutForm(){
+  _editingHutId = null;
   _pendingGeo = null;
   if (_previewMarker) { _previewMarker.remove(); _previewMarker = null; }
+  const statusEl = document.getElementById('geo-status');
   if (statusEl) statusEl.textContent = '';
-  ['h-name','h-alt','h-contact','h-notes','h-location-search'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value='';
-  });
+  ['h-name','h-date','h-day','h-alt','h-contact','h-notes','h-website','h-location-search','h-lat','h-lng']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('btn-add-hut').textContent = 'הוסף';
+  document.getElementById('hut-form-title').textContent = 'הוסף בקתה / לינה';
+  document.getElementById('btn-cancel-hut').style.display = 'none';
+}
+
+// The section header has always read "add / edit"; until now only add existed,
+// so correcting a typo meant deleting the hut and losing its booking status.
+function editHut(id){
+  const h = S.huts.find(x => x.id === id);
+  if (!h) return;
+  _editingHutId = id;
+  const set = (el, v) => { const e = document.getElementById(el); if (e) e.value = (v === undefined || v === null) ? '' : v; };
+  set('h-name', h.name); set('h-day', h.day); set('h-date', h.date);
+  set('h-alt', h.altitude); set('h-contact', h.contact); set('h-notes', h.notes);
+  set('h-website', h.website); set('h-lat', h.lat); set('h-lng', h.lng);
+  document.getElementById('h-country').value = h.country || 'FR';
+  document.getElementById('h-status').value  = h.status  || 'none';
+  document.getElementById('h-type').value    = h.type    || 'hut';
+  document.getElementById('btn-add-hut').textContent = 'עדכן';
+  document.getElementById('hut-form-title').textContent = 'עריכת ' + h.name;
+  document.getElementById('btn-cancel-hut').style.display = '';
+  document.querySelector('#sec-huts .add-form').scrollIntoView({ block:'start' });
+  document.getElementById('h-name').focus();
 }
 
 async function quickUpdateHut(id,field,val){
@@ -2919,7 +3008,7 @@ async function deleteHut(id){
 function renderHutsList(){
   const el=document.getElementById('huts-list');
   const sorted=[...S.huts].sort((a,b)=>a.day-b.day);
-  if(!sorted.length){el.innerHTML='<div class="empty-state">אין בקתות</div>';return;}
+  if(!sorted.length){el.innerHTML='<div class="empty-state">אין עדיין לינות.<br>חפש מיקום בטופס שלמעלה כדי להוסיף את הראשונה.</div>';return;}
   el.innerHTML=sorted.map(h=>`
     <div class="list-item">
       <div class="li-main">
@@ -2934,6 +3023,7 @@ function renderHutsList(){
         <option value="booked" ${h.status==='booked'?'selected':''}>מוזמן</option>
       </select>
       <div class="li-actions">
+        <button class="btn-sm" onclick="editHut('${h.id}')">ערוך</button>
         <button class="btn-sm danger" onclick="deleteHut('${h.id}')">מחק</button>
       </div>
     </div>
@@ -3179,11 +3269,11 @@ async function deleteSegment(id){
 function renderSegmentsList(){
   const el=document.getElementById('segments-list');
   const sorted=[...S.segments].sort((a,b)=>a.day-b.day);
-  if(!sorted.length){el.innerHTML='<div class="empty-state">אין מקטעים</div>';return;}
+  if(!sorted.length){el.innerHTML='<div class="empty-state">אין עדיין מקטעי מסלול.<br>הוסף מוצא ויעד בטופס שלמעלה.</div>';return;}
   el.innerHTML=sorted.map(s=>`
     <div class="list-item">
       <div class="li-main">
-        <div class="li-name">יום ${s.day} — ${esc(s.from)} → ${esc(s.to)}</div>
+        <div class="li-name">יום ${s.day} — ${esc(s.from)} ← ${esc(s.to)}</div>
         <div class="li-meta">${esc(String(s.dist))} ק"מ · +${esc(String(s.up))}מ' · ${esc(s.diff)} · ${esc(s.time)}</div>
         ${s.desc?`<div class="li-meta" style="margin-top:3px">${esc(s.desc)}</div>`:''}
       </div>
@@ -3202,6 +3292,7 @@ async function toggleMemberRole(id, newRole){
   const p = allProfiles.find(x => x.id === id);
   if (!p) return;
   if (id === sbUser?.id){ toast('לא ניתן לשנות תפקיד עצמך', 'err'); return; }
+  if (newRole !== 'admin' && !confirm('להוריד את ' + (p.display_name || '') + ' למטייל? הגישה לפאנל הניהול תיחסם.')) return;
   const token = await getFreshToken();
   if (!token){ toast('פג תוקף הכניסה — רענן את הדף', 'err'); return; }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`, {
@@ -3224,7 +3315,7 @@ async function toggleMemberRole(id, newRole){
 function renderMembersList(){
   const el = document.getElementById('members-list');
   if (!allProfiles.length){
-    el.innerHTML = '<div class="empty-state">אין חברים רשומים עדיין</div>';
+    el.innerHTML = '<div class="empty-state">אין עדיין חברי קבוצה.<br>מי שנרשם לאפליקציה יופיע כאן אוטומטית.</div>';
     return;
   }
 
@@ -3232,8 +3323,6 @@ function renderMembersList(){
     admin: 'גישה מלאה: מפה · ציוד של כולם · פאנל ניהול · שינוי בקתות ומקטעים · ניהול משתמשים',
     member: 'גישה חלקית: מפה · ציוד אישי בלבד · אין גישה לניהול'
   };
-
-  const AVATAR_COLORS = ['#e76f51','#f4a261','#2a9d8f','#457b9d','#9b5de5','#f15bb5','#00bbf9','#4a9e6e'];
 
   const sorted = [...allProfiles].sort((a,b) => {
     if (a.role === 'admin' && b.role !== 'admin') return -1;
@@ -3308,6 +3397,13 @@ function fillTripForm(){
 }
 
 async function saveTripInfo(){
+  const start = document.getElementById('t-start').value;
+  const end   = document.getElementById('t-end').value;
+  if (start && end && end < start) {
+    toast('תאריך הסיום קודם לתאריך ההתחלה', 'err');
+    document.getElementById('t-end').focus();
+    return;
+  }
   const prev = {...S.trip};
   S.trip.name=document.getElementById('t-name').value.trim();
   S.trip.group=document.getElementById('t-group').value.trim();
